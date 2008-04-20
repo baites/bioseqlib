@@ -1,0 +1,2133 @@
+<HTML>
+<HEAD>
+<TITLE>FORMAT.DOC - The SEQIO File Formats</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>FORMAT.DOC - The SEQIO File Formats</H1>
+
+<HR>
+
+<P>
+<H2><A NAME="formats>The File Formats</A></H2>
+
+This file describes the specific assumptions the SEQIO package makes
+about the file formats it supports.  The basic file formats are (with
+alternative names in parens):
+<P>
+<UL>
+<LI> Raw
+<LI> Plain
+<LI> GenBank (gb)
+<LI> EMBL
+<LI> Swiss-Prot (swissprot, sprot)
+<LI> PIR (CODATA)
+<LI> NBRF
+<LI> FASTA (Pearson)
+<LI> IG/Stanford (IG, Stanford)
+<LI> ASN.1 (ASN)
+<LI> GCG
+<LI> GCG-*  (GCG-GenBank, GCG-PIR, GCG-EMBL, ...)
+<LI> MSF
+<LI> PHYLIP
+<LI> PHYLIP-Seq (phylip-s, phylips)
+<LI> PHYLIP-Int (phylip-i, phylipi)
+<LI> Clustalw (clustal)
+<LI> FASTA-output (fasta-out, fastaout, fout)
+<LI> BLAST-output (blast-out, blastout, bout)
+</UL>
+where `FASTA-output' and `BLAST-output' specify the output produced by
+the programs in the FASTA and BLAST packages.  The `GCG-*' format
+actually refers to a set of formats which specify the GCG forms of the
+GenBank, EMBL, Swiss-Prot, PIR, NBRF, FASTA and IG/Stanford formats.
+These formats are included to distinguish the GCG forms of these
+formats from the generic GCG format (where the header lines of an
+entry are considered as unstructured comments).  Any valid name for
+one of the seven formats, plus their *-old variants given below, can
+replace the `*' in `GCG-*'.
+
+<P>
+In addition to the basic file formats, there are four file "formats"
+which use faster file reading implementations.  They are specifically
+geared to the formats of the GenBank, PIR, EMBL and Swiss-Prot
+databases, and they are included to speedup database searches (they
+run about 30% faster than the basic implementations, but at the cost
+of less error checking and depending that the file format exactly
+matches the database's format):
+<P>
+<UL>
+<LI> gbfast
+<LI> pirfast
+<LI> emblfast
+<LI> spfast
+</UL>
+My advice is that these formats only be used when searching the
+actual databases, and the basic file formats be used the rest of the
+time.  The difference in time only becomes significant when reading
+files in the multi-megabyte range.
+
+<P>
+Finally, there are also format variants which have been added to
+account for FASTA, NBRF and IG/Stanford format limitations commonly in
+use.  For FASTA and IG/Stanford, the limitation is that only one
+header line (any line beginning with a '&gt;' or ';') may appear in the
+entry.  For NBRF, the limitation is that no lines like "C;Accession:"
+or "C;Comment:" may appear after the sequence.  The formats below have
+a different output function which outputs entries in these limited
+formats (at the cost of losing some information about the sequences).
+Thus, the package can output entries that are readable by other
+programs which require the limited format.
+<P>
+<UL>
+<LI> NBRF-old (NBRFold)
+<LI> FASTA-old (FASTAold)
+<LI> Stanford-old (Stanfordold, IG-old, IGold)
+</UL>
+These three format variants are included in the `GCG-*' set of formats.
+
+
+<H2><A NAME="types">File Format Types</A></H2>
+
+Each format is considered to be one of the following types, which
+gives a basic description of the capabilities and common uses of the
+format:
+<DL>
+<DT> T_SEQONLY
+<DD>
+The entries of the format contain only a sequence.  It does not
+contain any place to store sequence information or comments.<BR>
+(Plain, Raw)
+<DT> T_DATABANK
+<DD>
+The entries are used mainly to store unadorned sequences (i.e., not
+used for sequences containing alignment characters).<BR>
+(GenBank, PIR, EMBL, Swiss-Prot, their GCG-* forms, ASN.1)
+<DT> T_GENERAL
+<DD>
+The entries can contain both unadorned sequences and alignment
+sequences.  In addition, there is a place to store sequence
+information and comments.<BR>
+(FASTA, NBRF, IG/Stanford, their GCG-* forms, GCG)
+<DT> T_LIMITED
+<DD>
+The entries can contain both unadorned sequences and alignment
+sequence, but there no place to store extra sequence information and
+comments.<BR>
+(FASTA-old, NBRF-old, IG-old, their GCG-* forms)
+<DT> T_ALIGNMENT
+<DD>
+The entries are used mainly to store multiple sequence alignments.
+They are not considered to contain much sequence information and do
+not have any place to store comments.<BR>
+(PHYLIP, Clustalw, MSF)
+<DT> T_OUTPUT
+<DD>
+The format is the output of an aligment program, and these formats are
+read-only formats.<BR>
+(FASTA-output, BLAST-output)
+</DL>
+These types may be of some use when developing software that wishes to
+perform different operations based on this file type information (the
+"<A HREF="fmtseq_doc.html">fmtseq</A>" program included in the
+distribution is one such piece of software).
+
+<P>
+(NOTE: Why is having someplace to store comments so important?  Well,
+one of the goals of this package is to try to unify all of the file
+formats and be able to capture and transfer as much information from
+one format to another.  The plans are to use these comment sections as
+the place to store any extra information for which there is not
+explicit spot in the entry.  And that can't happen if the file format
+doesn't have a comment section.  This is also the reason for the
+FASTA, NBRF and IG/Stanford variants mentioned above.)
+
+
+<P>
+<H2><A NAME="autodetermine">Automatically Determining the Format Type</A></H2>
+
+The SEQIO package has the ability to automatically determine the
+format of a file, if that file is one of the following formats:
+<P>
+<UL>
+Plain, GenBank, PIR, EMBL/Swiss-Prot, FASTA, NBRF, IG/Stanford, ASN.1,
+GCG, GCG-*, MSF, PHYLIP, Clustalw, FASTA-output, BLAST-output
+</UL>
+The Raw format and all of the format variations (*-old, *fast) must be
+explicitly specified in order to be used.  The package makes the
+format determination in two phases.  The first phase looks at the
+initial non-whitespace text of the file.  The second phase looks at
+the text of the first entry in the file.  Both of these phases occur
+during the opening of the file.
+
+
+<P>
+<H3>First Phase</H3>
+
+The first phase operation first skips over an e-mail header at the
+beginning of the file, if the file begins with the string "From ".  It
+then looks for the first non-whitespace character of the file and
+attempts to match that non-whitespace text to one of the following
+keywords (where the matching is case-insensitive and the `?' character
+is a wildcard which can match any character in the file):
+<PRE>
+    GenBank - "LOCUS ", "GB???.SEQ          Genetic Sequence Data Bank"
+       NBRF - "&gt;??;"
+      FASTA - "&gt;"
+       EMBL - "ID   ", "CC ", "XX "
+        PIR - "\\\", "ENTRY", "P R O T E I N  S E Q U E N C E  D A T A B A S E"
+IG/Stanford - ";"
+      ASN.1 - "Bioseq-set ::= {", "Seq-set ::= {"
+  FASTA-out - "FASTA", "TFASTA", "SSEARCH", "LFASTA", "LALIGN", "ALIGN"
+     PHYLIP - "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+   Clustalw - "CLUSTAL"
+        MSF - "PileUp"
+  BLAST-out - "BLASTN", "BLASTP", "BLASTX"
+</PRE>
+The keyword matching occurs in the order specified here, and the first
+matching keyword specifies the file format.  So, for NBRF and FASTA
+files, if the first entry's header line has a ';' as the third
+character after the initial '&gt;', the file format is taken to be NBRF.
+Files without that semi-colon are taken to be in FASTA format.
+
+<P>
+If there's a match, then the file format has been determined.
+Otherwise, the file's format is considered to be `Plain' at this
+point. 
+
+
+<P>
+<H3>Second Phase</H3>
+
+The second phase distinguishes more subtle variations of the
+file formats by looking in more detail at the text of the entries.
+The possible changes in the determined format are the following:
+<P>
+<UL>
+<LI>
+For EMBL files, the "ID   " line of each entry is scanned, and if
+it contains exactly 2 semi-colons, a period and the string "PRT"
+occuring before the second semi-colon, the entry is taken to
+be a Swiss-Prot entry.
+
+<P>
+In addition, if the string occurring before the last semi-colon
+on the "ID   " line is "EPD", then the entry identifier is taken
+to be an EPD database identifier, but the entry itself is still
+considered to be an EMBL formatted entry.
+
+<P>
+<LI>
+For all of the basic formats of the GCG-* formats, if the entry's
+sequence lines are in the GCG format, then the entry is considered to
+be the corresponding GCG-* format (so, a GenBank format becomes a
+GCG-GenBank format).
+
+<P>
+<LI>
+For PHYLIP files, each entry is checked to see if it is in the
+Interleaved or Sequential format.  This checking is a complete
+match of the text to the two formats, so the likelihood of an
+incorrect determination is remote.  See below in the description
+of the PHYLIP format for more details.
+
+<P>
+<LI>
+For Plain files (as determined by phase 1), the entry text is checked
+to see if a line ending with the string ".." occurs (or, more
+precisely, a line whose last non-whitespace characters are "..").  If
+so, the file is considered either a GCG or MSF file.  If the line
+ending with the ".." contains the string "MSF:", then the entry is
+considered to be an MSF file.  If not, the entry is considered to be a
+GCG file.
+</UL>
+
+<HR>
+
+<P>
+<H1><A NAME="details">The SEQIO File Format Implementations</A></H1>
+
+The package has six main (internal) operations that encapsulate the
+details of the file formats.  Those operations are:
+<DL>
+<DT> read
+<DD>
+Read the input file to find the beginning and end of the next entry in
+the file.  Also, find the beginning of the lines containing the
+sequence and if the entry explicitly specifies a sequence length, get
+that value.
+<DT> getseq
+<DD>
+Retrieve the sequence, if it exists, from the entry.
+<DT> rawseq
+<DD>
+Retrieve the raw sequence, if it exists, from the entry.  The raw
+sequence typically contains the sequence characters plus any alignment
+or notational characters.
+<DT> getinfo
+<DD>
+Get one piece or all of the SEQINFO information from the entry.
+<DT> putseq
+<DD>
+Given a sequence and SEQINFO structure, output a correctly formatted
+entry.
+<DT> annotate
+<DD>
+Output an entry's text, adding new text to its comment section
+(creating a comment section, if none exists in the entry).
+</DL>
+Each of the supported file formats will be described in terms of what
+those six operations do for that format.
+
+
+<P>
+<H2>General Comments</H2>
+
+<UL>
+<LI>
+There are no limits on lengths of anything (lines, entries, sequences,
+etc.), except for memory limitations and when outputting formats whose
+official descriptions specify a maximum line length (see below in the
+format descriptions).
+
+<P>
+<LI>
+When outputting formats that do have a maximum line length, long
+description/organism/comment lines are broken between word boundaries.
+That maximum line length is maintained unless there is a single word
+that is longer than the line length. That word is not broken up, but
+is output on a line that will be longer that the maximum length.
+
+<P>
+<LI>
+Except for gbfast, emblfast, spfast and pirfast, the case of the
+entry's keywords is irrelevant (they can be in upper or lower case, or
+any mixture of the two).  The "fast" formats require keywords in upper
+case (as occurs in the databases).
+
+<P>
+<LI>
+When outputting in the Plain, FASTA, NBRF or IG/Stanford formats, the
+putseq operation looks at the sequence being output, and may add
+whitespace to the output sequence to make it look prettier.  By
+default, the extra spaces are added when the sequence is DNA, RNA or
+Protein and when there are no non-alphabetic characters in the
+sequence (such as alignment characters).
+
+<P>
+This prettying operation can be turned off or turned on for all
+sequences using the function `seqfsetpretty'.
+</UL>
+
+<HR>
+
+<P>
+<H1><A NAME="raw">Raw Format</A></H1>
+
+In the raw format, all of the characters of the file are the
+characters of the sequence (including spaces, newlines, non-printable
+characters, and so on).
+
+<P>
+The read operation simply reads the whole file.  The getseq and rawseq
+operations return that text.  The getinfo operation merely stores the
+filename in the description field.  The putseq operation just outputs
+the sequence characters.  And there is no annotate operation.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="plain">Plain Format</A></H1>
+
+In the plain format, all of the alphabetic characters of the file are
+taken as the characters of the sequence, while spaces, newlines,
+position numbers and other punctuation characters are ignored.
+
+<P>
+The read operation reads in the whole file.  The getseq operation
+extracts all of the alphabetic characters from the text.  The rawseq
+operation extracts all of the non-whitespace and non-numeric
+characters from the text.  The getinfo operation stores the filename
+in the description field.  
+
+<P>
+The putseq operation outputs the sequence in one of two formats,
+depending on the sequence's alphabet.  If the alphabet is DNA, RNA or
+Protein, or the alphabet is Unknown but does not contain newline
+characters, the sequence is output 60 sequence characters per line,
+with interspersed spaces to improve the look of the output.  If the
+alphabet is Unknown and it contains newline characters, then it is
+output as is.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="genbank">GenBank Flat-File Format</A></H1>
+
+The read operation first looks for a "LOCUS" line and extracts the
+sequence length from positions 23-29 of that line (if the text there
+consists of digits).  Then, it looks for the entry ending "//" line,
+along with the "ORIGIN" line which specifies where the sequence lines
+begin.  The "ORIGIN" line is not required, however if it does
+not exist, the entry is assumed to contain no sequence.
+
+<P>
+The getseq operation scans the sequence lines, from just after the
+"ORIGIN" line to the "//" line.  All alphabetic characters there are
+assumed to be part of the sequence.  No assumptions are made about the
+format of these lines.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation looks first at the "LOCUS" line.  It takes the
+identifier from positions 13-22 (and assumes it's a GenBank id, unless
+marked by an identifier prefix), the alphabet determination from
+positions 37-40, whether it's circular from the existence of the
+keyword "circular" at positions 43-52, and the date from positions
+63-73.  Then, it looks for the "ACCESSION", "NID", "PID",
+"DEFINITION", "COMMENT" and "SOURCE" lines, where `lines' here mean
+one or more text lines corresponding to that part of the entry and
+where the lines can appear in any order.  Accession numbers, NID
+numbers and PID numbers are extracted from the "ACCESSION", "NID" and
+"PID" lines, respectively.  The description is taken from the
+"DEFINITION" line.  Comments are retrieved from the "COMMENT" line.
+The organism name is taken from the "ORGANISM" sub-record of the
+"SOURCE" line.  The getinfo operation cannot determine the value of
+the isfragment field (since that is not explicitly given anywhere in
+the entry).
+
+<P>
+The putseq operation outputs an entry with the following lines (in
+order): LOCUS, DEFINITION, ACCESSION, NID, SOURCE/ORGANISM, COMMENT,
+BASE COUNT, ORIGIN, sequence lines, //.  The form of these lines
+follows that described in the GenBank Release Notes, with the
+following exceptions:
+<P>
+<UL>
+<LI>
+Except for the LOCUS line and the ORIGIN-sequence-// lines, no lines
+are output if the SEQINFO information for that line does not exist.
+<LI>
+Only an non-accession identifier 10 characters long or less is output
+on the LOCUS line.  If there are no such identifiers in the idlist,
+then the keyword "Unknown" is output (or "(below)" to signal that the
+long identifiers occur in the COMMENT lines).
+<LI>
+On the LOCUS line, the "bp" in positions 31-32 may be replaced with
+"aa" or "ch" if the alphabet is Protein or Unknown.  The alphabet
+string in positions 37-40 could be "PRT" or "UNK" for the same reason.
+The output classification in positions 53-55 is "UNC" (Unclassified).
+And finally, the date in positions 63-73 is "01-JAN-0000" if no date
+is specified in the SEQINFO structure.
+<LI>
+The history lines, and any extra references, are output at the end of
+the COMMENT lines (or a COMMENT line is added which contains those
+lines).  Each of the added lines begins with the keyword "SEQIO".
+</UL>
+The annotate operation replaces or appends to the COMMENT line, if it
+exists.  If no COMMENT line exists, then a new COMMENT line will be
+inserted (or rather output between the existing lines of the entry)
+just before one of the following lines (whichever comes first in the
+entry):  FEATURES, BASE COUNT or ORIGIN.  One of those lines must
+appear in the entry.
+
+<P>
+Example GenBank entry:
+<PRE>
+LOCUS       A02201        664 bp    DNA             UNC       10-MAR-1993
+DEFINITION  Phage phi-105 DNA for immF plypeptide.
+ACCESSION   A02201
+SOURCE      .
+  ORGANISM  Bacteriophage phi-105
+COMMENT     NCBI gi: 345121
+            
+            SEQIO retrieval from GenBank database entry.   07-Feb-1996
+BASE COUNT      237 a    111 c    144 g    172 t
+ORIGIN
+        1 tgatcaccta tctcctttac aacacatagt gcctcactgt gccactgtgt cttgtggcat
+       61 gacacaatta tagtatccga atgtcggaaa tacaatacta aaaaagacgg aaatacaagt
+      121 attttttagt aaattgacgg aaatacaaga taaatactct ctgaatcttt aaaatgcttg
+      181 aatttcgtca aatttcgact tttacaaaat gtcgtgaata ccatacaatt tagacatacc
+      241 ttaacgggag gtgataatca tgctggatgg gaaaaagctt ggggctttaa ttaaggacaa
+      301 aagaaaagaa aagcacttga aacagacaga aatggcgaag gcactgggta tgtccagaac
+      361 ttatctctct gatatcgaaa acggcagata tctgccgagt acaaaaacac tttccagaat
+      421 agcgatttta ataaatctgg atttaaatgt gttaaaaatg acggaaatac aagtagttga
+      481 ggagggtgga tatgatagag ctgccggcac atgtagaaga caggctttat gagattttta
+      541 tgaaactatc agttccaagg ttgcttgaga aagaagccct ggagaaagga gagaagccga
+      601 atgcggaaag aaaaggcgct tgacctcgcg gccttcttcg ctgaatttga acaaatgatg
+      661 atca
+//
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="gbfast">GBFAST variation of GenBank</A></H1>
+
+The read operation performs the same steps as the GenBank read,
+however it makes some additional assumptions.  First, all keywords
+must appear in uppercase.  Second, the sequence length must appear in
+positions 23-29 on the "LOCUS" line.  Third, an "ORIGIN" line must
+appear in the entry (as must a sequence).  Fourth, all of the lines of
+sequence except the last must be in the format as described in the
+Release Notes, and so must be 75 characters long (9 characters for the
+position number, 60 characters of sequence, 6 spaces), plus the
+newline characters.  See the above example.
+
+<P>
+The getseq operation assumes that the sequence lines are in the format
+described in the previous paragraph, and all of the characters in the
+correct positions in that format are assumed to be characters of the
+sequence.  So, if the line format is incorrect, you will get garbage
+as the sequence.
+
+<P>
+The rawseq operation here is exactly the same as the getseq operation,
+since the GenBank sequences don't contain other characters.
+
+<P>
+The getinfo, putseq and annotate functions are the same as in the
+GenBank format.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="pir">PIR/CODATA Format</A></H1>
+
+The read operation first looks for an "ENTRY" line.  It then looks for
+the entry ending "///" line, but during this scan it also looks for
+the "SUMMARY" line and the "SEQUENCE" line.  If the "SUMMARY" line is
+found, the sequence length is extracted by scanning for "#length" on
+the line, and then looking for digits after that keyword.  The
+"SEQUENCE" line specifies the beginning of the sequence lines
+(starting on the next line), and no sequence is assumed to appear in
+the entry if the "SEQUENCE" line is missing.
+
+<P>
+The getseq operation scans the sequences lines from just after the
+"SEQUENCE" line to the "///" line ending the entry.  All alphabetic
+characters on those lines are assumed to be in the sequence.  No
+format for those lines is assumed.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation first looks at the "ENTRY" line.  The next word
+(i.e., non-whitespace string) after the "ENTRY" keyword is taken for
+an identifier, and then the rest of the line is searched for a "#type"
+option.  If the word after "#type" is "fragment", the isfragment field
+is set to 1.  Then, the entry is searched for the "ACCESSIONS",
+"COMMENT", "DATE", "ORGANISM" and "TITLE" lines, which can appear in
+any order.  The "ACCESSIONS" line holds accession numbers (and the
+search for the "ACCESSIONS" line will also find lines beginning with
+just "ACCESSION", for backward compatibility).  The "COMMENT" lines
+hold comments.  The "DATE" line holds the date, and the date taken is
+the last given on the line, with the assumption being that the dates
+on the line are specified from oldest to newest (not absolutely
+accurate, but handling dates better is on my TODO list).  The "TITLE"
+line holds the description, an optional organism name and possibly one
+of the keywords "(fragment)", "(fragment)" or "(tentative sequence)".
+The text before the string " - " is taken for the description, and the
+rest of the text, except for a trailing keyword, is taken for the
+organism name.  If the keywords "(fragment)" or "(fragments)" appear
+at the end of the string, isfragment is set to 1.  If "(tentative
+sequence)" appears, it is considered part of the description.  The
+"ORGANISM" line holds an organism name which is taken if the "TITLE"
+line does not specify an organism.
+
+<P>
+The putseq operation outputs a PIR entry containing the following
+lines (in order):  ENTRY, TITLE, ORGANISM, DATE, ACCESSIONS, COMMENT,
+SUMMARY, SEQUENCE, sequence lines, ///.   The format of those lines
+follows the PIR Release Notes, with the following exceptions:
+<P>
+<UL>
+<LI>
+The TITLE, ORGANISM, DATE, ACCESSIONS and COMMENT lines may not
+appear, if the SEQINFO structure does not contain the appropriate
+information.
+<LI>
+If no idlist is given, the keyword "UNKNWN" is output on the ENTRY
+line, instead of the sequence identifier.
+<LI>
+The SEQIO package attempts to follow the guidelines for the TITLE line
+(i.e., description " - " organism, and an optional "(fragment)") as
+best it can.  Depending on the text of the description and organism
+fields, this may or may not turn out well.
+<LI>
+The organism name is output in the "#formal_name" field of the
+ORGANISM line, even though it may not be the formal name of the
+organism.  (Better handling of the organism names is another thing on
+my TODO list.)
+<LI>
+The SUMMARY line only contains the "#length" field on it.
+<LI>
+The history lines, and any extra references, are output at the end of
+the COMMENT lines (or a COMMENT line is added which contains those
+lines).  Each of the added lines begins with the keyword "SEQIO".
+</UL>
+The annotate operation replaces or appends to the COMMENT line, if it
+exists.  If no COMMENT line exists, then a new COMMENT line will be
+inserted just before one of the following lines (whichever comes first
+in the entry): GENETIC, CLASSIFICATION, KEYWORDS, FEATURE, SUMMARY or
+SEQUENCE.  One of those lines must appear in the entry.
+
+
+<P>
+Example PIR entry:
+<PRE>
+ENTRY            CCMST       #type complete
+TITLE            cytochrome c, testis-specific - mouse
+ORGANISM         #formal_name mouse
+DATE             04-Nov-1994
+ACCESSIONS       B28160; A00012
+COMMENT    Mammalian testis contains two forms of cytochrome c, one identical
+           with the form found in somatic tissues and another that is
+           expressed in a stage-specific manner during spermatogenic
+           differentiation.
+           
+           SEQIO retrieval from PIR database entry.   07-Feb-1996
+SUMMARY          #length 105
+SEQUENCE
+                5        10        15        20        25        30
+      1 M G D A E A G K K I F V Q K C A Q C H T V E K G G K H K T G
+     31 P N L W G L F G R K T G Q A P G F S Y T D A N K N K G V I W
+     61 S E E T L M E Y L E N P K K Y I P G T K M I F A G I K K K S
+     91 E R E D L I K Y L K Q A T S S
+///
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="pirfast">PIRFAST Variation of PIR</A></H1>
+
+The read operation performs the same steps as the PIR read, however it
+makes some additional assumptions.  First, all keywords must appear in
+uppercase.  Second, a "SUMMARY" line must appear in the entry, and it
+must contain a "#length" field (although the field can appear anywhere
+on the line).  Third, a "SEQUENCE" line must appear in the entry
+immediately after the "SUMMARY" line (and the entry must contain a
+sequence).  Fourth, the format of the sequence lines must be as given
+in the PIR database, and so must be either 67 or 68 characters long (7
+characters for the position number, 30 characters of sequence, 30 or
+31 spaces or notational characters), plus the newline character.  See
+the above example.
+
+<P>
+The getseq operation assumes that the sequence lines are in the format
+described in the previous paragraph, and all of the characters in the
+correct positions in that format are assumed to be characters of the
+sequence.  So, if the line format is incorrect, you will get garbage
+as the sequence.
+
+<P>
+The rawseq operation here does not use the "fast" implementation, but
+uses the rawseq operation of the basic PIR format.
+
+<P>
+The getinfo, putseq and annotate functions are the same as in the PIR
+format.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="embl">EMBL/Swiss-Prot File Formats</A></H1>
+
+<blockquote>
+NOTE: The EMBL and Swiss-Prot file format implementations are
+essentially the same, differing only in their putseq and annotate
+operations.  So, we'll describe them together.
+
+<P>
+NOTE2: The EMBL read, getseq and getinfo implementations have been
+tested on, and are compatible with, the "EMBL" entries in the EMBL,
+EPD, aids-db, ENZYME, PROSITE and Swiss-Prot databases.  Because of
+the variations of the entries in these databases, some of the
+assumptions made in the implementations will differ from the
+official EMBL or Swiss-Prot file format descriptions.
+</blockquote>
+
+The read operation first looks for an "ID   " line.  It then looks for
+the entry ending "//" line, but during this scan it also looks for
+an "SQ   " line and a line beginning with two spaces.  If the "SQ   "
+line is found and the next word after "SQ   Sequence" consists of
+digits, it is taken for the sequence length.  The first line beginning
+with two spaces is assumed to be the beginning of the sequence lines,
+and if no such lines appear, the entry is assumed to contain no
+sequence. 
+
+<P>
+The getseq operation scans the sequences lines from the first line
+beginning with two spaces to the "///" line ending the entry.  All
+alphabetic characters on those lines are assumed to be in the
+sequence.  No format for those lines is assumed.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation first looks at the "ID " line.  The next word
+(i.e., non-whitespace string) after the "ID" keyword is taken for an
+identifier, and an attempt is made to determine if it is an EMBL id,
+an EPD id, a Swiss-Prot id, or something else.  It does this by counting
+the number of semi-colons on the line and checking whether the line ends
+with a period.  If three semi-colons and a period are found, then the
+string just before the third identifier is checked, and the identifier
+is assumed to be an EPD id if that string is "EPD" and is assumed to
+be an EMBL id otherwise.  If two semi-colons and a period are found,
+and the string just before the second semi-colon is "PRT", the
+identifier is assumed to be a Swiss-Prot id.  Otherwise, the
+identifier is some other id.  After figuring out the type of
+identifier and extracting it from the line, the rest of the line is
+searched for words that specify the alphabet ("DNA", "RNA", "PRT", and
+so on) and whether the sequence is circular ("circular").
+
+<P>
+Then the rest of the entry is searched for the "AC   ", "NI   ", "PI
+", "DT   ", "DE   ", "OS   ", "CC   " and "XX   " lines, which can
+appear in any order.   The "AC   ", "NI   " and "PI   " lines contain
+accession, NID and PID numbers.  The "DT   " lines contain dates, of
+which the date on the last "DT   " line is taken, under the assumption
+that the dates are given from oldest tonewest.  The "DE   " lines
+contain the description, and may end with one of the keywords
+"(fragment)" or "(fragments)", in which caseisfragment is set to 1.
+The "OS   " lines specify the organism name. The  "CC   " and "XX   "
+lines specify the comment lines, about which there are a couple things
+to note.  First, an "XX   " line isdifferent from any line beginning
+with "XX", in that three spacesmust appear after the "XX" and
+non-whitespace text must appear after that, in order for it to be
+considered a comment line.  These lines do not occur in the official
+EMBL or Swiss-Prot formats, but do appear in some of the variations.
+Second, more than one comment section can appear in an entry.  When a
+"CC   " line is reached, the comment section beginning at that line is
+assumed to consist of all "CC   " and "XX" lines (note the lack of
+spaces after the "XX") following that line, upto the first line not
+beginning with "CC" or "XX" (and ignoring a trailing "XX" line).  When
+an "XX   " line is seen, all following "XX   " lines are considered
+part of that comment section.  The text for these sections are
+concatenated together to make up the comment lines.
+
+<P>
+For the EMBL format, the putseq operation outputs an EMBL entry
+containing the following lines (in order): ID, AC, NI, DT, DE, OS, CC,
+SQ, sequence lines, //.  In the output, XX lines are added between
+each of the lines (except the sequence lines) as specified in the EMBL
+format.  The format of the lines follows the EMBL Release Notes, with
+the following exceptions:
+<P>
+<UL>
+<LI>
+The AC, NI, DT, DE, OS, and CC lines may not appear if the SEQINFO
+structure does not contain the appropriate information.
+<LI>
+On the ID line, if no idlist is given, the keyword "Unknown" is output
+instead of an identifier.  The keyword "converted" is output instead
+of "standard" or "preliminary".  The keyword "UNC" is output instead
+of the classification code.  The keyword "UNK" might be output for the
+alphabet, if the alphabet is Unknown.  And, the keyword "AA" or "CH"
+could appear after the sequence length, if the alphabet is Protein or
+Unknown.
+<LI>
+There will be at most one DT line, and it will only contain the
+specified date.
+<LI>
+Instead of outputting "XX" lines to specify a `blank' line in a
+comment, a line containing "CC    " followed immediately by a newline
+is output (so, in my design of the comment sections, the comments are
+specified by the "CC   " lines).
+<LI>
+The history lines, and any extra references, are output at the end of
+the output comment section.  Each of the added lines begins with the
+keyword "SEQIO".
+</UL>
+
+For the Swiss-Prot format, the putseq operation outputs a Swiss-Prot
+entry containing the following lines (in order): ID, AC, DT, DE, OS,
+CC, SQ, sequence lines, //.  The format of the lines follows the
+Swiss-Prot Release Notes, with the following exceptions:
+<P>
+<UL>
+<LI>
+The AC, DT, DE, OS, and CC lines may not appear if the SEQINFO
+structure does not contain the appropriate information.
+<LI>
+On the ID line, if no idlist is given, the keyword "Unknown" is output
+instead of an identifier.  The keyword "converted" is output instead
+of "standard" or "preliminary".
+<LI>
+The alphabet keyword could be "RNA", "DNA" or "UNK" if the alphabet is
+not Protein.  And, the keyword "circular" could appear before the
+alphabet (if iscircular is 1).  The keyword "BP" or "CH" could appear
+after the sequence length, if the alphabet is DNA, RNA or Unknown.
+<LI>
+There will be at most one DT line, and it will only contain the
+specified date.
+<LI>
+The history lines, and any extra references, are output at the end of
+the output comment section.  Each of the added lines begins with the
+keyword "SEQIO".
+</UL>
+
+For the EMBL format, the annotate operation replaces or appends to the
+"CC   " or "XX   " lines, if one exists.  The operation looks for the
+first comment section, and will insert or replace at that point.  If
+no comment section exists, then a new comment section using "CC   "
+lines will be inserted (or rather output between the existing lines of
+the entry) as follows.  If a "DR   ", "PR   ", "FH   " or "FT   " line
+appears in the entry, the comment is inserted just before the first of
+those lines.  Otherwise, the comment is inserted just before the "SQ
+", or "     " (i.e., sequence) lines.  One of these lines must appear
+in the entry.
+
+<P>
+For the Swiss-Prot format, the annotate operation replaces or appends
+to the "CC   " lines, if they exist.  If no comment section exists, 
+then a new comment section will be inserted (or rather output between
+the existing lines of the entry) as follows.  If a "DR   ", "KW   " or
+"FT   " line appears in the entry, the comment is inserted just before
+the first of those lines.  Otherwise, the comment is inserted just
+before the "SQ   " or sequence lines.  One of these lines must appear
+in the entry.
+
+<P>
+Example EMBL entry:
+<PRE>
+ID   CM23SRIBR  converted; DNA; UNC; 805 BP.
+XX
+AC   X80636;
+XX
+DT   22-MAR-1995
+XX
+DE   C.mucosalis gene for 23S ribosomal RNA (fragment)
+XX
+OS   Campylobacter mucosalis
+XX
+CC   SEQIO retrieval from EMBL-format entry.   07-Feb-1996
+XX
+SQ   Sequence 805 BP; 226 A; 158 C; 224 G; 194 T; 3 other;
+     gattctgcgc ggaaaatata acggggctaa aatgagtacc gaagctttag acttagtttt        60
+     actaagtggt aggagcgttc tattcagcgt tgaaggtgta ccggtaagga gcgctggagc       120
+     ggatagaagt gagcatgcag gcatgagtag cgataattgg ggtgagaatc cccaacgccg       180
+     taarcccaag gtttcctacg cgatgctcgt catcgtaggg ttagccgggt cctaagcaaa       240
+     gtccgaaagg ggtatgcgat ggaaaattgg ttaatattcc aatgccaaca ttattgtgcg       300
+     atggaaggac gcttagagtt aaaggagcca gctgatggaa gtgctggtcg aaaggtgtag       360
+     gttgagttac aggcaaatcc gtaactcttt atccgagacc ccacaggcgt ttgaagttct       420
+     tcggaatgga tgacgaatcc ttgatactgt cgagccaaga aaagtttcta agtttagata       480
+     atgttgcccg taccgtaaac cgacacaggt gggtgggatg agtattctaa ggcgcgtgga       540
+     agaactctct tcaaggaact ctgcaaaata gcaccgtatc ttcggtataa ggtgtgccta       600
+     actttgtgaa ggatttactc cgtaagcatt gaaggttaca acaaagagtc cctcccgact       660
+     gtttaccaaa aacacagcac tctgctaact cgtaagagga tgtatagggt gtgacgcctg       720
+     cccggtgctc gaaggttaat tgatggggty agcagyaatg cgaagctctt gatcgaagcc       780
+     cgagtaaacg gccgccgtaa ctata                                             805
+//
+</PRE>
+
+
+Example Swiss-Prot entry:
+<PRE>
+ID   104K_THEPA  CONVERTED;      PRT;   924 AA.
+AC   P15711;
+DT   01-AUG-1992
+DE   104 KD MICRONEME-RHOPTRY ANTIGEN.
+OS   THEILERIA PARVA.
+CC   -!- DEVELOPMENTAL STAGE: SPOROZOITE ANTIGEN.
+CC   -!- SUBCELLULAR LOCATION: IN MICRONEME/RHOPTRY COMPLEXES.
+CC   
+CC   SEQIO retrieval from Swiss-Prot database entry.   07-Feb-1996
+SQ   SEQUENCE   924 AA;
+     MKFLILLFNI LCLFPVLAAD NHGVGPQGAS GVDPITFDIN SNQTGPAFLT AVEMAGVKYL
+     QVQHGSNVNI HRLVEGNVVI WENASTPLYT GAIVTNNDGP YMAYVEVLGD PNLQFFIKSG
+     DAWVTLSEHE YLAKLQEIRQ AVHIESVFSL NMAFQLENNK YEVETHAKNG ANMVTFIPRN
+     GHICKMVYHK NVRIYKATGN DTVTSVVGFF RGLRLLLINV FSIDDNGMMS NRYFQHVDDK
+     YVPISQKNYE TGIVKLKDYK HAYHPVDLDI KDIDYTMFHL ADATYHEPCF KIIPNTGFCI
+     TKLFDGDQVL YESFNPLIHC INEVHIYDRN NGSIICLHLN YSPPSYKAYL VLKDTGWEAT
+     THPLLEEKIE ELQDQRACEL DVNFISDKDL YVAALTNADL NYTMVTPRPH RDVIRVSDGS
+     EVLWYYEGLD NFLVCAWIYV SDGVASLVHL RIKDRIPANN DIYVLKGDLY WTRITKIQFT
+     QEIKRLVKKS KKKLAPITEE DSDKHDEPPE GPGASGLPPK APGDKEGSEG HKGPSKGSDS
+     SKEGKKPGSG KKPGPAREHK PSKIPTLSKK PSGPKDPKHP RDPKEPRKSK SPRTASPTRR
+     PSPKLPQLSK LPKSTSPRSP PPPTRPSSPE RPEGTKIIKT SKPPSPKPPF DPSFKEKFYD
+     DYSKAASRSK ETKTTVVLDE SFESILKETL PETPGTPFTT PRPVPPKRPR TPESPFEPPK
+     DPDSPSTSPS EFFTPPESKR TRFHETPADT PLPDVTAELF KEPDVTAETK SPDEAMKRPR
+     SPSEYEDTSP GDYPSLPMKR HRLERLRLTT TEMETDPGRM AKDASGKPVK LKRSKSFDDL
+     TTVELAPEPK ASRIVVDDEG TEADDEETHP PEERQKTEVR RRRPPKKPSK SPRPSKPKKP
+     KKPDSAYIPS ILAILVVSLI VGIL
+//
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="emblfast">EMBLFAST/SPFAST Variation of EMBL/Swiss-Prot</A></H1>
+
+The read operation performs the same steps as the EMBL/Swiss-Prot
+read, however it makes some additional assumptions.  First, all
+keywords must appear in uppercase, with one exception noted next.
+Second, an "SQ   Sequence" line must appear in the entry, although the
+keyword "Sequence" can appear in uppercase, as in "SQ   SEQUENCE".
+Third, the sequence length must be the next word after "SQ   Sequence".  
+Fourth, the format of the sequence lines must occur as in the EMBL or
+Swiss-Prot databases.  The EMBL sequence lines are 80 characters long
+(5 spaces, 60 sequence characters with 5 interspersed spaces, and 10
+characters with a right justified position number), plus the newline
+character.  The Swiss-Prot sequence lines are 70 characters long (same
+as EMBL except no position numbers), plus the newline.
+
+<P>
+The getseq operation assumes that the sequence lines are in the format
+described in the previous paragraph, and all of the characters in the
+correct positions in that format are assumed to be characters of the
+sequence.  So, if the line format is incorrect, you will get garbage
+as the sequence.
+
+<P>
+The rawseq operation here is exactly the same as the getseq operation,
+since the EMBL and Swiss-Prot sequences don't contain other characters.
+
+<P>
+The getinfo, putseq and annotate functions are the same as in the
+EMBL/Swiss-Prot format.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="fasta">FASTA/FASTA-old File Formats</A></H1>
+
+<blockquote>
+NOTE: The implementation of the FASTA format here follows the format
+described in the FASTA program documentation, with the exception that,
+at the beginning of the entry, multiple lines beginning with either
+'&gt;' or ';' can appear.  This was done in order to better
+distinguish the entry's header lines from the sequence lines (where
+comments beginning with ';' are permitted).  This exception only
+occurs when reading FASTA entries.  The FASTA output functions only
+use ';' for those additional header lines.
+</blockquote>
+
+The read operation looks for a line beginning with '&gt;'.  That line is
+taken as the header/description line for the entry.  If that line has
+been formatted using the standard one-line description format (see
+file "<A HREF="seqio_user.html#one-line">user.doc</A>"), then the
+sequence length is extracted from that line. The operation then looks
+for the next line which does not begin with a '&gt;' and which does not
+begin with a ';'.  If such a line occurs before the next line with a
+'&gt;', that line is the first line of the sequence.  Finally, the
+operation looks for the entry's end at either the next line which does
+begin with a '&gt;' or the end of the file.
+
+<P>
+The getseq operation scans the sequences lines (all of the lines not
+beginning with '&gt;').  All alphabetic characters on those lines are
+assumed to be in the sequence, except that when a semi-colon appears
+on a line, the rest of that line is considered a comment and not part
+of the sequence.  No format for those lines is assumed.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation first looks at the first header line of the
+entry, and parses it according to the one-line description format
+specified in file "<A HREF="seqio_user.html#one-line">user.doc</A>".
+It then considers any following lines that begin either with a '&gt;' or
+a ';' as comment lines.  Any other comments in the entry are ignored.
+
+<P>
+In the FASTA format, the putseq operation outputs a first header line
+according to the one-line description format.  The comment/history
+lines and the sequence identifiers are output as additional header
+lines that begin with a ';'.  Finally, the sequence is output.
+
+<P>
+In the FASTA-old format, the putseq operation only outputs the first
+header line and the sequence lines.  No comment/history lines are
+output, and the identifiers appear in the header line.
+
+<P>
+In the FASTA format, the annotate operation either replaces, appends
+or inserts the comment lines just after the first header line.  There
+is no annotate operation in the FASTA-old format.
+
+
+<P>
+Example FASTA entry:
+<PRE>
+&gt;gb:A14666|acc:A14666 PRLB promoter - Bacteriophage lambda, 281 bp.
+;
+;NCBI gi: 579066
+;
+;SEQIO retrieval from GenBank database entry.   07-Feb-1996
+  gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc acaatctttt
+  acacagatac aatattttta gtggaaactt cttgacattt cggcccatga cctttactct
+  gttataaatt acttttatgg gggacgatca cactagcaaa ggagttacct aagccccgaa
+  tgttcaatgg gaagacttcc ccaatcatga cccacattac gggaccccaa gttgcggaga
+  agaaggcgat gtaaactgtc aaagcaatca cagagatgat c
+</PRE>
+
+Example FASTA-old entry:
+<PRE>
+&gt;gb:A14666|acc:A14666 PRLB promoter - Bacteriophage lambda, 281 bp.
+  gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc acaatctttt
+  acacagatac aatattttta gtggaaactt cttgacattt cggcccatga cctttactct
+  gttataaatt acttttatgg gggacgatca cactagcaaa ggagttacct aagccccgaa
+  tgttcaatgg gaagacttcc ccaatcatga cccacattac gggaccccaa gttgcggaga
+  agaaggcgat gtaaactgtc aaagcaatca cagagatgat c
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="nbrf">NBRF/NBRF-old File Formats</A></H1>
+
+<blockquote>
+NOTE:  The implementation of the NBRF format follows the format
+descriptions given in the release notes of the VMS version
+of the PIR database, with the following exceptions:
+<P>
+<OL>
+<LI>
+An identifier list (with identifiers separated by '|') can appear
+after the ';' on the first line of the entry, and there is no
+limitation to the length of that identifier list.
+<LI>
+The second line of the entry is treated as a full one-line description
+(so it can contain more than just the description and organism name).
+<LI>
+The NBRF header lines (which occur after the sequence) are assumed to
+begin at the first line whose second character is a ';', and run until
+the end of the entry.  So, the sequence lines cannot contain such a
+line (or the sequence will only be partially read).
+<LI>
+Every "C;Comment: " line in the header lines is assumed to contain a
+space between the "C;Comment:" and the comment text.  This space (or
+whatever character appears there) is not considered part of the
+comment text.
+</OL>
+</blockquote>
+
+The read operation first looks for a line beginning with '&gt;', which
+contains a two-character code and database identifiers for the
+sequence.  The next line, which should not begin with a '&gt;',
+contains a one-line description of the sequence, and the operation
+attempts to extract the sequence length from that line.  After that,
+the operation scans the sequence lines looking for the beginning of
+the header lines or the end of the entry.  The header lines begin with
+the first line whose second character is ';', and they are not
+required to appear in an entry.  The end of the entry is either the
+first line which begins with a '&gt;', or the end of the file.
+
+<P>
+The getseq operation scans the sequences lines from just after the
+description line to either the first occurrence of a '*', the
+beginning of the header lines or the end of the entry.  All alphabetic
+characters on those lines are assumed to be in the sequence.  No
+format for those lines is assumed.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation first looks at the initial identification line.
+The format of that line is "&gt;??;..." where "??" is a two character
+description and "..." is a list of identifiers.  Six forms of the two
+character description are recognized
+<P>
+<UL>
+<LI> "P1" - Protein complete
+<LI> "F1" - Protein fragment
+<LI> "DL" - linear DNA
+<LI> "DC" - circular DNA
+<LI> "RL" - linear RNA
+<LI> "RC" - circular RNA
+</UL>
+and the appropriate alphabet, isfragment and iscircular values are
+set.  The list of identifiers are added to mainid, mainacc and idlist.
+If no identifier prefix is specified for an identifier (either by the
+identifier itself or by the "IdPrefix" information field of the
+database's BIOSEQ entry, if a database search is being performed),
+then "oth" for Other is used.  The next line in the entry is parsed
+according to the one-line description format.  Then, if the header
+lines were found in the entry during the read operation, they are
+scanned, looking for lines beginning with "C;Accession:", "C;Comment:"
+and "C;Date:" which give the accession numbers, comments and date,
+respectively.
+
+<P>
+In the NBRF format, the putseq operation outputs a initial
+identification line of the appropriate form, containing one of the two
+character descriptions above (or "XX" if the alphabet is Unknown) and
+containing the list of identifiers in idlist.  It then outputs a
+one-line description according to the one-line description format.
+The sequence is output and terminated with a '*'.  Finally, the date,
+accession numbers and comments/history are output in lines beginning
+with "C;Accession:", "C;Comment:" and "C;Date:".
+
+<P>
+In the NBRF-old format, the putseq operation only outputs the initial
+identification line, the description line and the sequence lines.  In
+addition, only one identifier is placed on the initial identification
+line, and if that identifier was not an accession number, the main
+accession number is added to the beginning of the description line.
+
+<P>
+For the NBRF format, the annotate operation replaces or appends the
+"C;Comment: " lines, if they exists.  If no comment lines exists, then
+a new comment section will be inserted (or rather output between the
+existing lines of the entry) as follows.  If a "C;Genetics:",
+C;Complex:", "C;Function:", "C;Superfamily:", "C;Keywords:" or "F;"
+line appears in the entry, the comment is inserted just before the
+first of those lines.  Otherwise, the comment is inserted at the end
+of the entry.
+
+<P>
+There is no annotate operation in the NBRF-old format.
+
+<P>
+Example NBRF entry:
+<PRE>
+&gt;DL;gb:A14666
+PRLB promoter - Bacteriophage lambda, 281 bp.
+  gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc acaatctttt
+  acacagatac aatattttta gtggaaactt cttgacattt cggcccatga cctttactct
+  gttataaatt acttttatgg gggacgatca cactagcaaa ggagttacct aagccccgaa
+  tgttcaatgg gaagacttcc ccaatcatga cccacattac gggaccccaa gttgcggaga
+  agaaggcgat gtaaactgtc aaagcaatca cagagatgat c*
+C;Date: 18-AUG-1994
+C;Accession: A14666
+C;Comment: NCBI gi: 579066
+C;Comment: 
+C;Comment: SEQIO retrieval from GenBank database entry.   23-Mar-1996
+</PRE>
+
+Example NBRF-old entry:
+<PRE>
+&gt;DL;gb:A14666
+~A14666 PRLB promoter - Bacteriophage lambda, 281 bp.
+  gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc acaatctttt
+  acacagatac aatattttta gtggaaactt cttgacattt cggcccatga cctttactct
+  gttataaatt acttttatgg gggacgatca cactagcaaa ggagttacct aagccccgaa
+  tgttcaatgg gaagacttcc ccaatcatga cccacattac gggaccccaa gttgcggaga
+  agaaggcgat gtaaactgtc aaagcaatca cagagatgat c*
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="ig">IG/Stanford, IG-old/Stanford-old File Formats</A></H1>
+
+The read operation first looks for a line beginning with ';'.  The
+operation then looks for the next line which does not begin with a
+';'.  All of the lines beginning with ';' make up the comment lines,
+and the first line not beginning with ';' contains the sequence's
+description.  If the description line has been formatted using the
+standard one-line description format (see file 
+"<A HREF="seqio_user.html#one-line">user.doc</A>"), then the sequence
+length is extracted from that line.  Finally, the operation looks for
+the entry's end at either the next line which does begin with a ';' or
+the end of the file.
+
+<P>
+The getseq operation scans the sequence lines from just after the
+description line until either the end of the entry is reached, or a
+'1' or a '2' appears.  All alphabetic characters on those lines are
+assumed to be in the sequence.  No format for those lines is assumed.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation first gets the comment lines at the beginning of
+the entry, and then parses the description line according to the
+one-line description format.  Finally, it looks for a '1' or '2' at
+the end of the sequence, and sets iscircular to 0 or 1, respectively.
+
+<P>
+In the IG/Stanford format, the putseq operation outputs any
+comment/history lines (or just the line ";\n" if there are no
+comment/history lines, a one-line description, the sequence and finally
+either a '1' or '2' depending on the value of iscircular.
+
+<P>
+In the IG-old/Stanford-old format, the putseq operation outputs the
+same text as in the IG/Stanford format except that exactly one
+comment/history line is output.
+
+<P>
+In the IG/Stanford format, the annotate operation either replaces,
+appends or inserts the comment lines at the beginning of the entry.
+There is no annotate operation in the IG-old/Stanford-old format.
+
+
+<P>
+Example IG/Stanford entry:
+<PRE>
+;NCBI gi: 579066
+;
+;SEQIO retrieval from GenBank database entry.   07-Feb-1996
+gb:A14666|acc:A14666 PRLB promoter - Bacteriophage lambda, 281 bp.
+  gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc acaatctttt
+  acacagatac aatattttta gtggaaactt cttgacattt cggcccatga cctttactct
+  gttataaatt acttttatgg gggacgatca cactagcaaa ggagttacct aagccccgaa
+  tgttcaatgg gaagacttcc ccaatcatga cccacattac gggaccccaa gttgcggaga
+  agaaggcgat gtaaactgtc aaagcaatca cagagatgat c1
+</PRE>
+
+Example IG-old/Stanford-old entry:
+<PRE>
+;NCBI gi: 579066
+gb:A14666|acc:A14666 PRLB promoter - Bacteriophage lambda, 281 bp.
+  gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc acaatctttt
+  acacagatac aatattttta gtggaaactt cttgacattt cggcccatga cctttactct
+  gttataaatt acttttatgg gggacgatca cactagcaaa ggagttacct aagccccgaa
+  tgttcaatgg gaagacttcc ccaatcatga cccacattac gggaccccaa gttgcggaga
+  agaaggcgat gtaaactgtc aaagcaatca cagagatgat c1
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="asn">ASN.1 Text File Format</A></H1>
+
+<blockquote>
+NOTE: This file format implementation is not nearly complete enough to
+handle all of the variations of ASN.1 text files.  I concentrated the
+implementation on handling the "Bioseq" sequence records defined as
+part of the "Bioseq-set" structure, i.e., it looks for each
+"Bioseq-set.seq-set.seq" record in the file, where '.' separates the
+initial keywords for each level of sub-record.  (See the NCBI toolkit
+for the definitions of the "Bioseq-set" and "Bioseq" syntax, and the
+values of those initial keywords).
+
+<P>
+However, it does handle all of the syntactic requirements of the ASN.1
+text format.  It makes no assumptions on the structure of the file,
+handling a completely free-form file (with one exception listed
+below).  It does assume that the format consists of a hierarchy of
+records, where a record consists of a text string identifier and then
+a pair of matching braces bounding the contents of the record (except
+for simple records which contain only one or more strings and
+numbers).
+</blockquote>
+
+The read operation looks for the beginning of each
+"Bioseq-set.seq-set.seq" record in the file.  The operation assumes
+that this record is a "Bioseq" record, and looks for the end of it.
+Also, the read operations makes the syntactic requirement that the
+open brace beginning the "seq" record is separated from its initial
+keyword by exactly one space (i.e., the operation looks for the string
+"seq {").  After scanning to the end of the "seq" record, the
+operation looks for the "seq.inst.length" sub-record.  If found, the
+sequence length is extracted from that sub-record.
+
+<P>
+The getseq operation looks for the "seq.inst.seq-data" sub-record in
+the entry.  If found, the sequence is extracted from that sub-record.
+(NOTE: This operation can only handle sequences that have been encoded
+in the `iupacna', `iupacaa', `ncbi2na' or `ncbi4na' formats.)
+
+<P>
+The rawseq operation is the same as the getseq operation, since the
+`iupacna', `iupacaa', 'ncbi2na' and 'ncbi4na' formats do not contain
+non-alphabetic characters.
+
+<P>
+The getinfo operation looks for a large number of possible sub-records
+for information about the sequence.  To find database identifiers, it
+looks in the "seq.id" sub-record for the sub-sub-records "pir.name",
+"pir.accession", "swissprot.name", "swissprot.accession",
+"genbank.name", "genbank.accession", "embl.name", "embl.accession",
+"ddbj.name", "ddbj.accession", "prf.name", "prf.accession",
+"other.name", "other.accession", "pdb.mol", "gi", "giim.id", "gibbsq"
+and "gibbmt".  Any identifiers found are added to the idlist.  To find
+the date information, it looks in the "seq.descr" sub-record to find
+the sub-sub-records "create-date", "update-date", "genbank.date",
+"genbank.entry-date", "embl.creation-date", "embl.update-date",
+"pir.date", "sp.created", "sp.sequpd", "sp.annotupd" and
+"pdb.deposition".  
+
+<P>
+Then, the operations searches for the description, organism and
+comment information in the "seq.descr" sub-record.  For the
+description, the operation searches for the sub-sub-records
+"title", "pdb.compound" and "name" and picks one of them for the
+description ("title" if found, else "pdb.compound", else "name").  For
+the organism, the sub-sub-records "org.taxname", "org.common",
+"pir.source" and "pdb.source" are searched.  For the comments, all of
+the "comment" sub-sub-records in "seq.descr" are concatenated together
+to make up the comment lines.
+
+<P>
+Finally, the alphabet is picked up from the "seq.descr.mol-type",
+"seq.descr.modif.dna", "seq.descr.modif.rna" or "seq.inst.mol"
+sub-records, the isfragment field is set to 1 if
+"seq.descr.modif.partial" exists, and the iscircular field is set to 1
+if data string in "seq.inst.topology" is "circular".
+
+<P>
+The putseq operation outputs a "Bioseq" record for the sequence as
+part of a "Bioseq-set" structure (i.e., the appropriate strings are
+output before the first putseq operation, between the "Bioseq" records
+and when the file is closed, so that the file consists of a correctly
+formatted "Bioseq-set" record).  The form of the file mirrors that of
+the Bioseq-set example given in the NCBI toolkit.
+
+<P><I>
+(NOTE: Because some text must be output when the file is closed (i.e.,
+when seqfclose is called), you MUST call seqfclose when writing an
+ASN.1 file.  If you don't call seqfclose, the text file will not be
+complete.)</I>
+
+<P>
+The annotate operation either replaces, creates or appends the comment
+lines in the "seq.descr" sub-record (i.e., the comment lines are the
+"seq.descr.comment" records).  If no "seq.descr" sub-record exists,
+one is created in the most appropriate place in the "seq" record.  If
+the entry given to the annotate operation is not a Bioseq "seq"
+record, an error occurs.
+
+<P>
+(NOTE: Using the annotate operation by itself will NOT create a valid
+ASN.1 text file.  You must output the following strings before the
+first entry, between entries, and after the last entry (again,
+assuming the entries are "Bioseq" records taken from the "Bioseq-set"
+hierarchy):
+<PRE>
+   Before the first entry:  "Bioseq-set ::= {\n  seq-set {\n"
+          Between entries:  " ,\n"
+     After the last entry:  " } }\n"
+</PRE>
+
+A Complete ASN.1 Text File:
+<PRE>
+Bioseq-set ::= {
+  seq-set {
+    seq {
+      id {
+        genbank {
+          name "A14666" ,
+          accession "A14666" } } ,
+      descr {
+        title "PRLB promoter" ,
+        org {
+          taxname "Bacteriophage lambda" } ,
+        update-date
+          str "18-AUG-1994" ,
+        comment "NCBI gi: 579066" ,
+        comment "SEQIO retrieval from GenBank database entry.  07-Feb-1996" } ,
+      inst {
+        repr raw ,
+        mol dna ,
+        length 281 ,
+        seq-data
+          iupacna "gatcagctgcgacacaactagtttacttactcgcttattaaaccagacccacaatcttt
+tacacagatacaatatttttagtggaaacttcttgacatttcggcccatgacctttactctgttataaattactttta
+tgggggacgatcacactagcaaaggagttacctaagccccgaatgttcaatgggaagacttccccaatcatgacccac
+attacgggaccccaagttgcggagaagaaggcgatgtaaactgtcaaagcaatcacagagatgatc" } } } }
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="gcg">GCG Format</A></H1>
+
+The read operation first looks for a line that ends with the string
+".." (or more precisely, a line whose last non-whitespace characters
+are "..").  That line should be the GCG information line, and should
+look something like the following:
+<PRE>
+  gb:A02201  Length: 664  June 21, 1996 18:42  Type: N  Check: 9896  ..
+</PRE>
+although any or all of this information (except the "..") can be
+missing. If the line contains the "Length:" keyword, then the read
+operation will extract the sequence length.  The read operation then
+reads the rest of the file, and assumes that those lines contain the
+sequence.
+
+<P>
+The getseq operation scans the sequences lines.  All alphabetic
+characters on those lines are assumed to be in the sequence.  No
+format for those lines is assumed.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.  During this operation, any period `.' appearing in the
+sequence lines is assumed to be a gap character and translated into a
+dash `-' (the SEQIO's canonical gap character).
+
+<P>
+The getinfo operation takes the date and the alphabet from the GCG
+information line (if the date and the "Type:" fields are there), sets
+the description to the first word of the GCG information line (if it
+isn't "Length:"), and then takes all of the lines up to the GCG
+information line as the comment.
+
+<P>
+The putseq operation first outputs any comment lines, outputs a
+complete GCG information line (with a valid checksum), and then
+outputs the sequence lines in the default format shown below.  Any
+dash `-' appearing in the output sequence is assumed to be a gap
+character and automatically translated into a period `.'.
+
+<P>
+There currently is no annotate function.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="gcg-*">GCG-* Formats</A></H1>
+
+The processing of the GCG-* formats essentially merges the processing
+of the GCG format on the sequence lines with the processing of the
+GenBank, PIR, EMBL, Swiss-Prot, FASTA, FASTA-old, NBRF, NBRF-old,
+IG/Stanford and IG-old formats when dealing with the header lines of
+each entry.  So, see above for the details on that processing.
+
+<P>
+The one exception to this rule is the relationship between the NBRF
+and GCG-NBRF formats.  Since the NBRF entries contain "header"
+information that actually appears at the end of the entry, and the GCG
+format requires that the last thing in an entry be the sequence, the
+GCG and non-GCG forms of the NBRF entries differ more than the
+other formats.  In the GCG-NBRF format, the lines before the GCG
+information line are assumed to contain the two header lines normally
+found in the NBRF entries, immediately followed by the lines normally
+appearing at the end of the file (the "C;Comment:", "C;Accession:"
+and other lines).  After those lines, the GCG information line and
+sequence lines should appear, and be the last things in the entry.
+The fmtseq program and SEQIO package have been implemented to make this
+transformation between the NBRF and GCG-NBRF formats.
+
+<P>
+An example GCG-Genbank entry:
+<PRE>
+LOCUS       A14666        281 bp    DNA             PHG       18-AUG-1994
+DEFINITION  PRLB promoter.
+ACCESSION   A14666
+KEYWORDS    .
+SOURCE      Bacteriophage lambda.
+  ORGANISM  Bacteriophage lambda
+            Viridae; ds-DNA nonenveloped viruses; Siphoviridae.
+REFERENCE   1  (bases 1 to 281)
+  AUTHORS   Michiels,F., Delcour,J., Mahillon,J., Joos,H., Platteeuw,C. and
+            Josson,K.
+  TITLE     Transformed lactic acid bacteria
+  JOURNAL   Patent: EP 0311469-A 10 12-APR-1989;
+            PLANT GENETIC SYSTEMS N.V.; UNIVERSITE CATHOLIQUE DE LOUVAIN
+COMMENT     NCBI gi: 579066
+FEATURES             Location/Qualifiers
+     source          1..281
+                     /organism="Bacteriophage lambda"
+     RBS             158..166
+     CDS             180..254
+                     /note="PRLB;  NCBI gi: 579067"
+                     /codon_start=1
+                     /translation="MFNGKTSPIMTHITGPQVAEKKAM"
+BASE COUNT       89 a     67 c     52 g     73 t
+ORIGIN      
+
+  gb:A14666  Length: 281  June 28, 1996 16:23  Type: N  Check: 2754  ..
+
+       1 gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc 
+
+      51 acaatctttt acacagatac aatattttta gtggaaactt cttgacattt 
+
+     101 cggcccatga cctttactct gttataaatt acttttatgg gggacgatca 
+
+     151 cactagcaaa ggagttacct aagccccgaa tgttcaatgg gaagacttcc 
+
+     201 ccaatcatga cccacattac gggaccccaa gttgcggaga agaaggcgat 
+
+     251 gtaaactgtc aaagcaatca cagagatgat c
+</PRE>
+
+<P>
+An example GCG-NBRF entry:
+<PRE>
+>DL;gb:A14666
+PRLB promoter - Bacteriophage lambda, 281 bp.
+C;Date: 18-AUG-1994
+C;Accession: A14666
+C;Comment: NCBI gi: 579066
+C;Comment: 
+C;Comment: SEQIO retrieval from GenBank database.   28-Jun-1996
+
+  gb:A14666  Length: 281  June 28, 1996 16:22  Type: N  Check: 2754  ..
+
+       1 gatcagctgc gacacaacta gtttacttac tcgcttatta aaccagaccc 
+
+      51 acaatctttt acacagatac aatattttta gtggaaactt cttgacattt 
+
+     101 cggcccatga cctttactct gttataaatt acttttatgg gggacgatca 
+
+     151 cactagcaaa ggagttacct aagccccgaa tgttcaatgg gaagacttcc 
+
+     201 ccaatcatga cccacattac gggaccccaa gttgcggaga agaaggcgat 
+
+     251 gtaaactgtc aaagcaatca cagagatgat c 
+
+</PRE>
+
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="msf">MSF Multiple Sequence Format</A></H1>
+
+The read operation first looks for a GCG information line of the
+following form:
+<PRE>
+ Pileup.Msf  MSF: 729  Type: N  June 21, 1996 15:02  Check: 3171 ..
+</PRE>
+although any or all of this information can be missing, except the
+".." and the "MSF: %d" section, the second of which the read operation
+uses to get the sequence length.  After the information line, the read
+operation looks for the sequence name lines, which are of the form
+<PRE>
+ Name: Humhbbbpc        Len:   729  Check: 6463  Weight:  1.00
+</PRE>
+where the "Name: " field gives the sequence identifier and must appear
+on any non-blank line in this section of the MSF file (the other
+fields are ignored, and the length is assumed to be the same as the
+global length).  The sequence name lines section ends when a line
+beginning with "//" appears.  Any number of blank lines can be
+interspersed in this section, but any non-blank line should contain
+the above format.  The rest of the file is assumed to contain the
+sequence lines, where each sequence line begins with the sequence
+name followed by a space, as in:
+<PRE>
+           401                                                450
+Humhbbbpc  CAGAAATTTA GTGTTTTCTC AGTCAGTTAA CATTCCTTCA AC........ 
+Humhbbbpd  CAGAAATTTA GTGTTTTCTC AGTCAGTTAA CATTCCTTCA AC........ 
+Humhbbbpe  CAGACAAATG GAACAGAATA GAGAGCCCAG AAATAAGACC ACATG..... 
+Humhbbbpf  CAGACAAATG GAACAGAATA GAGAGCCCAG AAATAAGACC ACATG..... 
+Humhbbbpg  AATACAAAAT CAGTAGCATT TCATATATAA A......... .......... 
+Humhbbbph  AATACAAAAT CAGTAGCATT TCATATATAA A......... .......... 
+Humhbbbp1  AAGTGATGAA ATTGTGTATT CAATGTAGTC TCAAGAGAAT TGAAAACCAA 
+Humhbbbpa  AAATAAAAGG ATGGAGGAAG ATCTACCAAG CA........ .......... 
+Humhbbbpb  AAATAAAAGG ATGGAGGAAT ATCTACCAAG CA........ .......... 
+Humhbbbp2  AGCT.AAAGG ATTGTAAATG CACTAATCAG CACTCTGTGT CTAGCTCAAG 
+</PRE>
+No format of the sequence lines or presence or absence of the position
+number lines (401...450) is assumed, except for the initial sequence
+name.  The sequence lines run to the end of the file.
+
+<P>
+The getseq operation finds every sequence line beginning with the
+corresponding sequence name (the sequences are ordered by the order of
+sequence names in the sequence names section).  All alphabetic
+characters appearing after the sequence name are taken for the
+sequence.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.  During this operation, any period `.' appearing in the
+sequence lines is assumed to be a gap character and translated into a
+dash `-' (the SEQIO's canonical gap character).
+
+<P>
+The getinfo operation takes the date and the alphabet from the GCG
+information line (if the date and the "Type:" fields are there), sets
+the description to the sequence name found in the sequence name
+section, and then takes all of the lines up to the GCG information
+line as the comment.
+
+<P>
+The putseq operation outputs an MSF file exactly mimicing the files
+output by GCG using "PileUp" in its default mode, except that only the
+keyword "PileUp" appears on the first line and no comments are output.
+Any dashes `-' found in the sequences are assumed to be gap characters
+and are automatically translated into periods `.'.  If the sequences
+are of different lengths, the putseq operation will pad the smaller
+sequences with periods `.'.
+
+<P><I>
+(IMPORTANT: The one unusual feature about the putseq operation is
+that, unlike all of the other putseq operations except Clustalw and
+PHYLIP, the actual output does not occur until `seqfclose' is called to
+close the file.  Because the MSF format must know the number of
+entries before it can begin the output, the sequences cannot be
+output at each call to `seqfwrite'.  What the putseq operation does,
+on each call to `seqfwrite', is make a copy of the sequence and a
+sequence identifier (either the main identifier, description or
+organism name).  Then, when `seqfclose' is called, all of the
+sequences are output in the correct format.)</I>
+
+<P>
+There currently is no annotation function.
+
+<P>
+An example MSF file:
+<PRE>
+PileUp
+
+
+ pir.msf  MSF: 104  Type: P  June 28, 1996 17:04  Check: 3466  ..
+
+ Name: pir:CCCZ         Len:   104  Check: 9501  Weight:  1.00
+ Name: pir:CCMQR        Len:   104  Check: 9512  Weight:  1.00
+ Name: pir:CCMKP        Len:   104  Check: 9066  Weight:  1.00
+ Name: pir:CCRB         Len:   104  Check: 8395  Weight:  1.00
+ Name: pir:CCGW         Len:   104  Check: 8496  Weight:  1.00
+ Name: pir:CCCM         Len:   104  Check: 8496  Weight:  1.00
+
+//
+
+            1                                                   50
+pir:CCCZ    GDVEKGKKIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQAPGYSYTA
+pir:CCMQR   GDVEKGKKIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQAPGYSYTA
+pir:CCMKP   GDVFKGKRIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQASGFTYTE
+pir:CCRB    GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD
+pir:CCGW    GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD
+pir:CCCM    GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD
+
+            51                                                 100
+pir:CCCZ    ANKNKGIIWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK
+pir:CCMQR   ANKNKGITWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK
+pir:CCMKP   ANKNKGIIWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK
+pir:CCRB    ANKNKGITWG EDTLMEYLEN PKKYIPGTKM IFAGIKKKDE RADLIAYLKK
+pir:CCGW    ANKNKGITWG EETLMEYLEN PKKYIPGTKM IFAGIKKKGE RADLIAYLKK
+pir:CCCM    ANKNKGITWG EETLMEYLEN PKKYIPGTKM IFAGIKKKGE RADLIAYLKK
+
+            101
+pir:CCCZ    ATNE
+pir:CCMQR   ATNE
+pir:CCMKP   ATNE
+pir:CCRB    ATNE
+pir:CCGW    ATNE
+pir:CCCM    ATNE
+
+</PRE>
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="phylip">PHYLIP Interleaved and Sequential File Formats</A></H1>
+
+<blockquote>
+NOTE: The implementation here is more flexible than other
+implementations, however it is a bit restrictive in its output, in that
+<P>
+<OL>
+<LI>
+Both interleaved and sequential formats are supported and rigorously
+distinguished.  See below for the details.
+<LI>
+An input file in the PHYLIP format can contain one or more PHYLIP
+entries, where each entry must be separated only by whitespace.  Mixed
+files (some interleaved entries, some sequential entries) are
+supported.
+<LI>
+Any number of blank lines or lines filled only with whitespace can be
+included in the file.  Blank lines do not disrupt the parsing of the
+entries.
+<LI>
+The output operation does NOT output more than one entry per file,
+because I have yet to completely figure out the SEQIO interface
+issues.  (Note that this may change in a future version.)
+<LI>
+This implementation was done using the documentation from Version
+3.5c.  Whether it works with earlier versions is not known.
+</OL>
+</blockquote>
+
+The read operation first skips whitespace characters and then looks
+for the number of sequences and the sequence length (those two numbers
+must be the first thing in the entry).  On that initial line, it also
+looks for the option characters 'A', 'C', 'F', 'M', 'U', 'W'.  If any
+of the options except 'U' are found, the operation then skips any
+subsequent lines that begin with a match to the character strings
+"ANCESTOR  ", "CATEGORIES", "FACTORS   ", "MIXTURE   ", or 
+"WEIGHTS   ".  A line is considered to match one of the strings if the
+first 10 characters of the line contain a prefix of the string padded
+by spaces.  Also, these lines are skipped
+only if the corresponding option was given on that first line.<BR>
+(NOTE: This may cause some problems on an entry such as this one:
+<PRE>
+3 6 A
+A         ABCDEF
+B         BCDEFG
+C         CDEFGH
+</PRE>
+because the second line of the entry is treated as an "ANCESTOR  "
+line, when in fact it was a sequence line. But, from looking at the
+documentation, the PHYLIP programs would die on this entry, too.  And
+replacing "A         " with something like "Alpha     " eliminates the
+problem.) 
+
+<P>
+After skipping those initial lines, the read operation tries to match
+the subsequent lines to the interleaved and sequential file formats.
+The following criteria are the keys to distinguishing between the two
+formats:
+<P>
+<OL>
+<LI>
+The line giving the initial piece of a sequence must be at least 10
+characters long and there must be at least one non-whitespace
+character in those first ten characters.  This should be the sequence
+identifier, and its characters are not counted as part of the sequence.
+<LI>
+In the Interleaved format, all of the sequence substrings in each
+block of the entry must have the same length.  A block is a set of
+"number-of-sequences" lines (not counting blank lines) which contain a
+piece of each of the sequences.
+<LI>
+The end of each sequence must occur on its own line, without any
+additional non-whitespace text after the sequence characters.
+</OL>
+If one format but not the other matches, or both formats match and the
+input format has been specified as PHYLIP-Int or PHYLIP-seq (instead
+of just PHYLIP), then the entry format has been successfully
+determined.  Otherwise (if neither match or both match), a parse error
+is triggered.  However, given the above criteria and the fact that
+the operation attempts to completely match both formats against the
+text, the likelihood that the formats will match the same text is
+extremely remote.
+
+<P>
+Finally, if the 'U' option has been set on the entry's first line, the
+read operation skips the user trees listed in the entry, to get to the
+end of the entry.  The format of the user trees consists of a line
+giving the number of trees, followed by any number of lines of
+text where each user tree description is ended by a semi-colon (the
+operation just counts the semi-colons it sees).  The end of the entry
+is at the end of the line containing the last semi-colon.
+
+<P>
+The getseq operation finds the first line of the appropriate sequence
+in the entry (i.e., the `seqfseqno' sequence), skips the 10 character
+identifier and retrieves the sequence.  All alphabetic characters are
+considered to be in the sequence.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation takes the 10 character sequence identifier to be
+the description of the sequence.  No other information is retrieved.
+
+<P>
+The putseq operation outputs an Interleaved or Sequential entry
+exactly as described in the PHYLIP program documentation.  If the
+sequences output are of different lengths, the putseq operation will
+pad the smaller sequences with dashes `-'.
+
+<P><I>
+(IMPORTANT: The one unusual feature about the putseq operation is
+that, unlike all of the other putseq operations except Clustalw and
+MSF, the actual output does not occur until `seqfclose' is called to
+close the file.  Because the PHYLIP format must know the number of
+entries before it can output the first line, the sequences cannot be
+output at each call to `seqfwrite'.  What the putseq operation does
+is, on each call to `seqfwrite', it makes a copy of the sequence and a
+sequence identifier (either the mainid, mainacc, description or
+organism name).  Then, when `seqfclose' is called, all of the
+sequences are output in the correct format.)</I>
+
+<P>
+There is no annotate function.
+
+<P>
+Example PHYLIP Interleaved entry:
+<PRE>
+     6    104
+pir:CCCZ   GDVEKGKKIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQAPGYSYTA 
+pir:CCMQR  GDVEKGKKIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQAPGYSYTA 
+pir:CCMKP  GDVFKGKRIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQASGFTYTE 
+pir:CCRB   GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD 
+pir:CCGW   GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD 
+pir:CCCM   GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD 
+
+           ANKNKGIIWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK 
+           ANKNKGITWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK 
+           ANKNKGIIWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK 
+           ANKNKGITWG EDTLMEYLEN PKKYIPGTKM IFAGIKKKDE RADLIAYLKK 
+           ANKNKGITWG EETLMEYLEN PKKYIPGTKM IFAGIKKKGE RADLIAYLKK 
+           ANKNKGITWG EETLMEYLEN PKKYIPGTKM IFAGIKKKGE RADLIAYLKK 
+
+           ATNE 
+           ATNE 
+           ATNE 
+           ATNE 
+           ATNE 
+           ATNE 
+</PRE>
+
+Example PHYLIP Sequential entry:
+<PRE>
+     6    104
+pir:CCCZ   GDVEKGKKIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQAPGYSYTA
+           ANKNKGIIWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK
+           ATNE
+pir:CCMQR  GDVEKGKKIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQAPGYSYTA
+           ANKNKGITWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK
+           ATNE
+pir:CCMKP  GDVFKGKRIF IMKCSQCHTV EKGGKHKTGP NLHGLFGRKT GQASGFTYTE
+           ANKNKGIIWG EDTLMEYLEN PKKYIPGTKM IFVGIKKKEE RADLIAYLKK
+           ATNE
+pir:CCRB   GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD
+           ANKNKGITWG EDTLMEYLEN PKKYIPGTKM IFAGIKKKDE RADLIAYLKK
+           ATNE
+pir:CCGW   GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD
+           ANKNKGITWG EETLMEYLEN PKKYIPGTKM IFAGIKKKGE RADLIAYLKK
+           ATNE
+pir:CCCM   GDVEKGKKIF VQKCAQCHTV EKGGKHKTGP NLHGLFGRKT GQAVGFSYTD
+           ANKNKGITWG EETLMEYLEN PKKYIPGTKM IFAGIKKKGE RADLIAYLKK
+           ATNE
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="clustal">Clustalw Format</A></H1>
+
+The read operation first skips the header line of the file, and then
+skips any blank lines.  The next non-blank line is assumed to begin
+the first block.  The sequence lines of each block contain first an
+identifier of 15 characters and then the rest of the line is sequence.
+Those sequence lines must begin with a non-whitespace character.
+After the sequence lines in each block, there is an additional line
+to highlight closely related columns in the alignment, followed by
+zero or more blank lines.  This additional line and all of the lines
+occurring between blocks must either be empty or begin with a
+whitespace character.  There is only one entry per file, and the whole
+file is assumed to consist of these sequence blocks.
+
+<P>
+The getseq operation finds the first line of the appropriate sequence
+in the entry (i.e., the `seqfseqno' sequence), skips the 15 character
+identifier and retrieves the sequence.  All alphabetic characters are
+considered to be in the sequence.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation takes the 15 character sequence identifier to be
+the description of the sequence.  No other information is retrieved.
+
+<P>
+The putseq operation outputs a Clustalw entry exactly as the clustalw
+program does, except that the version number is replaced with "*.**"
+and the package does not look for closely related columns in the
+output alignment (it simply outputs a line of whitespace without any
+'*' or '.' characters).  If the sequences are of different lengths,
+the putseq operation will pad the smaller sequences with dashes '-'.
+
+<P><I>
+(IMPORTANT: The one unusual feature about the putseq operation is
+that, unlike all of the other putseq operations except PHYLIP and MSF,
+the actual output does not occur until `seqfclose' is called to close
+the file.  Because the Clustalw format must know the number of entries
+before it can output the first line, the sequences cannot be output at
+each call to `seqfwrite'.  What the putseq operation does is, on each
+call to `seqfwrite', it makes a copy of the sequence and a sequence
+identifier (either the mainid, mainacc, description or organism name).
+Then, when `seqfclose' is called, all of the sequences are output in
+the correct format.)</I>
+
+<P>
+There is no annotate function.
+
+<P>
+Example Clustalw file:
+<PRE>
+CLUSTAL W(*.**) multiple sequence alignment
+
+
+
+pir:CCCZ       GDVEKGKKIFIMKCSQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGYSYTAANKNKGIIWG
+pir:CCMQR      GDVEKGKKIFIMKCSQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGYSYTAANKNKGITWG
+pir:CCMKP      GDVFKGKRIFIMKCSQCHTVEKGGKHKTGPNLHGLFGRKTGQASGFTYTEANKNKGIIWG
+pir:CCRB       GDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAVGFSYTDANKNKGITWG
+pir:CCGW       GDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAVGFSYTDANKNKGITWG
+pir:CCCM       GDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAVGFSYTDANKNKGITWG
+                                                                           
+
+pir:CCCZ       EDTLMEYLENPKKYIPGTKMIFVGIKKKEERADLIAYLKKATNE
+pir:CCMQR      EDTLMEYLENPKKYIPGTKMIFVGIKKKEERADLIAYLKKATNE
+pir:CCMKP      EDTLMEYLENPKKYIPGTKMIFVGIKKKEERADLIAYLKKATNE
+pir:CCRB       EDTLMEYLENPKKYIPGTKMIFAGIKKKDERADLIAYLKKATNE
+pir:CCGW       EETLMEYLENPKKYIPGTKMIFAGIKKKGERADLIAYLKKATNE
+pir:CCCM       EETLMEYLENPKKYIPGTKMIFAGIKKKGERADLIAYLKKATNE
+                                                           
+</PRE>
+
+<HR>
+
+<P>
+<H1><A NAME="fasta-out">FASTA-output Formats</A></H1>
+
+<blockquote>
+NOTE:  With one or two exceptions, this implementation can read and
+understand the output from the FASTA, TFASTA, SSEARCH, LFASTA,
+LALIGN and ALIGN programs which were run either in interactive
+or non-interactive mode, and where the output was formatted
+with MARKX option set to any of 0, 1, 2, 3 or 10.
+
+<P> 
+The exceptions are
+<P>
+<OL>
+<LI>
+The program must have been run in non-interactive mode in order for
+the automatic format determination to work correctly.  By
+"non-interactive", I mean that the initial header output by the
+program:
+<PRE>
+    FASTA searches a protein or DNA sequence data bank
+    version 2.0u4 Feb., 1996
+   Please cite:
+    W.R. Pearson &amp; D.J. Lipman PNAS (1988) 85:2444-2448
+   .
+   .
+   .
+</PRE>
+<P>
+must appear in the text given as input.
+<LI>
+If the FASTA, TFASTA or SSEARCH is run in interactive mode, no
+information will be known about the query sequence (its information is
+in the initial header, which is not included in the file specified to
+receive the program output),
+<LI>
+The ALIGN program must be run in non-interactive mode in order for the
+package to correctly parse it (i.e., that initial header must occur in
+the text).  For the other programs, the package will parse its output
+correctly, if the file format is specified as `FASTA-output'.
+<LI>
+The implementation was tested against version 2.0u4.  If the output
+was different in previous versions, the implementation may not work.
+</OL>
+</blockquote>
+
+The read operation first scans the text occurring before the first
+alignment in the file.  This initial text is ignored, except where it
+gives information about the sequences being aligned.  The initial
+texts of some of the output formats contain lines of the following
+form.
+<PRE>
+ &gt;GT8.7 transl. of pa875.con, 19 to 675: 217 aa
+ &gt;musplfm transl. of musplfm.seq, 2 to 676 : 224 aa
+
+(A) musplfm.aa &gt;musplfm transl. of musplfm.seq, 2 to 676          - 224 aa
+(B) lcbo.aa    &gt;LCBO - Prolactin precursor - Bovine               - 229 aa
+
+&gt;musplfm transl. of musplfm.seq, 2 to 676           224 aa vs.
+&gt;LCBO - Prolactin precursor - Bovine                229 aa
+</PRE>
+The text after the '&gt;' is parsed to extract the sequence id (the first
+word after the '&gt;'), a sequence description, the sequence length and
+alphabet information about the sequence.
+
+<P>
+Then, the read operation reads the "entries" of the file, where each
+entry is considered to be the text describing an alignment between two
+sequences.  Different programs output different sets of alignments,
+but all six of the FASTA programs supported output one or more
+two-sequence alignments.  Thus, every entry in this format contains
+two sequences.
+
+<P>
+The getseq operation extracts the appropriate sequence from the entry
+(the first or second sequence if the `seqfseqno' value is 1 or 2,
+respectively).  All alphabetic characters are considered part of the
+sequence, except that if the output was generated with MARKX=2, then
+any periods occurring in the second sequence are replaced with the
+corresponding character of the first sequence.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence (with the exception of period substitution mentioned
+above).
+
+<P>
+The getinfo operation extracts a main identifier, a description and an
+alphabet for the appropriate sequence, if available.  It also
+constructs a comment that begins with the following:
+<PRE>
+From SSEARCH output alignment of:
+ &gt;musplfm transl. of musplfm.seq, 2 to 676, 224 aa
+ &gt;LCBO - Prolactin precursor - Bovine, 229 aa
+</PRE>
+This gives the name of the program whose output is being parsed, and
+the descriptions of the two sequences from whose alignment came the
+current sequence.  This text is then followed by any information from
+the alignment describing the score of that pairwise alignment.  The
+format of this text depends on the FASTA program executed and the MARKX
+value, as it is just copied from the program output.
+
+<P>
+There is no putseq or annotate operation.
+
+<HR>
+
+<P>
+<H1><A NAME="blast-out">BLAST-output Formats</A></H1>
+
+<blockquote>
+NOTE:  With one or two exceptions, this implementation can read and
+understand the output from the BLASTN, BLASTP or BLASTX (and maybe
+even the TBLAST* programs, although that has not been tested yet).
+The exceptions are:
+<P>
+<OL>
+<LI>
+Automatic recognition of the BLAST-output format requires that one of
+the keywords BLASTN, BLASTP or BLASTX be the first word in the file
+(possibly after an e-mail header).  Many of the BLAST e-mail servers
+prepend a description of their service before the actual BLAST output,
+and so disrupt the recognition by the package.  So, for output gotten
+by an e-mail server, the input format must be set.
+<LI>
+The implementation was tested on output generated by versions 1.2 and
+1.4.9.  If the output is different in version 1.3 or 2.0, the
+implementation may not work (although the implementation can correctly
+handle gaps in the alignments, so that change from 1.* to 2.0 is
+handled).
+</OL>
+</blockquote>
+
+The read operation first scans the text occurring before the first
+alignment in the file.  This initial text is ignored, except where it
+gives information about the sequences being aligned.  The initial
+texts of some of the output formats contain lines of the following
+form.
+<PRE>
+Query=  gb:A02201|acc:A02201 Phage phi-105 DNA for immF plypeptide - Bacteriophage phi-
+        (665 letters)
+</PRE>
+The text after "Query=" and before the line containing the "(...
+letters)" is parsed as a oneline description, and the number inside
+the "(... letters)" is taken as the length of the query sequence.
+
+<P>
+Then, the read operation reads the "entries" of the file, where each
+entry is considered to be the text describing an alignment between two
+sequences.  The BLAST alignment format consists of header lines
+specifying the sequence that matches the query, following by one or
+more pairwise alignments of substrings of the matching sequence and
+the query.  The read operation first scans the header lines, which are
+of the form:
+<PRE>
+&gt;emb|X02799|NCPHI105 Bacillus subtilis phage phi 105 immunity region with
+            repressor gene and ORF &gt;emb|A11144|A11144 phage phi 105 repressor
+            (ORF1)-Orf 2 genes and there flanking regions
+            Length = 1306
+</PRE>
+where the "Length =" line ends the list of oneline descriptions of the
+sequences that match the query (in the next pairwise alignment(s) ).
+It extracts the oneline description and length of the sequence.
+
+<P>
+The read operation considers an "entry" to consist only of the actual
+score reporting text and pairwise alignment text.  So, while the
+header lines above are scanned for their information, the entry
+reported by the package begins at the line containing either "Plus
+Strand HSPs:", "Minus Strand HSPs:" or "Score =".  And the entry ends
+just after the last line of the pairwise alignment text.  This is done
+to make the entry text reported by the package more uniform.
+
+Thus, the following BLAST output would be reported as two entries, the
+first beginning at the "Plus Strand HSPs:" line and running through
+the first pairwise alignment, and the second beginning with the "Score
+= 89..." line.  The header lines will not be reported in any
+alignment, and will only be scanned to extract the oneline description
+and length information.
+<PRE>
+&gt;emb|Z68118|CER01E6 Caenorhabditis elegans cosmid R01E6
+            Length = 40,937
+
+  Plus Strand HSPs:
+
+ Score = 127 (35.1 bits), Expect = 3.2, Sum P(2) = 0.96
+ Identities = 39/56 (69%), Positives = 39/56 (69%), Strand = Plus / Plus
+
+Query:    426 ATTTTAATAAATCTGGATTTAAATGTGTTAAAAATGACGGAAATACAAGTAGTTGA 481
+              ||||||||||||||    ||||||  | |||||||||  | || |    || || |
+Sbjct:  35266 ATTTTAATAAATCTCATCTTAAATTAGATAAAAATGAATGCAAAATTTATATTTTA 35321
+
+ Score = 89 (24.6 bits), Expect = 3.2, Sum P(2) = 0.96
+ Identities = 25/34 (73%), Positives = 25/34 (73%), Strand = Plus / Plus
+
+Query:     93 ACAATACTAAAAAAGACGGAAATACAAGTATTTT 126
+              ||||||||||||||    | ||   || ||||||
+Sbjct:  31613 ACAATACTAAAAAATCTTGTAAACAAAATATTTT 31646
+</PRE>
+
+<P>
+The getseq operation extracts the appropriate sequence from the entry
+(the first or second sequence if the `seqfseqno' value is 1 or 2,
+respectively).  All alphabetic characters are considered part of the
+sequence.
+
+<P>
+The rawseq operation is the same as the getseq operation, except that
+all non-whitespace and non-numeric characters are considered part of
+the sequence.
+
+<P>
+The getinfo operation extracts a main identifier, a description and an
+alphabet for the appropriate sequence, if available.  It also
+constructs a comment that begins with the following:
+<PRE>
+From BLASTN/BLASTP/BLASTX output alignment of:
+   &gt;gb:A02201|acc:A02201 Phage phi-105 DNA for immF plypeptide - Bacteriophage phi
+and
+   &gt;emb|X02799|NCPHI105 Bacillus subtilis phage phi 105 immunity
+              region with repressor gene and ORF 
+   &gt;emb|A11144|A11144 phage phi 105 repressor (ORF1)-Orf 2 genes
+              and there flanking regions
+</PRE>
+This gives the name of the program whose output is being parsed, and
+the descriptions of the two sequences from whose alignment came the
+current sequence.  This text is then followed by any information from
+the alignment describing the score of that pairwise alignment.
+
+<P>
+There is no putseq or annotate operation.
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 28, 1996
+</ADDRESS>
+</BODY>

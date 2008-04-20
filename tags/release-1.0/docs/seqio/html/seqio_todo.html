@@ -1,0 +1,223 @@
+<HTML>
+<HEAD>
+<TITLE>TODO  -  Things to do to the SEQIO Package</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>TODO  -  Things to do to the SEQIO Package</H1>
+
+These things are the improvements I've thought of.  There is no
+definite time-table on any of these things, or even an ordering of
+which to do first.  The way it will work is that I'll do the ones I
+get requests for (ordered by the urgency of the request) or
+information about.
+
+<P>
+Jim
+
+<P>
+<HR>
+
+<P>
+<H1>Big Things</H1>
+
+
+Add the following file formats (and any others people tell me about):
+<blockquote>
+Blocks, AceDB, PDB, BLAST input, PAUP/Nexus, Olsen's format,
+Zuker's format, RNase, DNA Strider, Oracle and SyBase databases
+</blockquote>
+
+<P>
+Develop canonical BIOSEQ entries for any and all databases.
+
+<P>
+Port the package to other Unix variants and VMS.
+(And maybe to the PC's, too.)
+
+<P>
+Figure out how to handle the notion of "related identifiers" that
+occur in entries.  As database cross-references become more and more
+common in sequence entries, I want to define a formal notion of a
+"link" from one entry to another.  I can see a number of types of
+links:
+<P>
+<UL>
+<LI>
+ALTERNATES:  other identifiers that correspond to this entry
+<LI>
+MIRRORS:  identifiers for entries that mirror this sequence
+          (i.e., exactly the same sequence/information in
+           another database)
+<LI>
+ISOMERS:  entries for sequences that correspond to the same
+          "sequence" or place in a genome but which vary by
+          some characters.  Or sequences from other organisms
+          that have the same function.
+<LI>
+CONVERSIONS:  entries whose sequences occur because of the
+              conversion (DNA <-> Protein, DNA <-> cDNA, ...)
+              of this entry's sequence, or part of the sequence.
+<LI>
+OVERLAPS:  entries whose sequence overlap in some manner to
+           this entry's sequence
+<LI>
+ALIGNMENTS:  entries in databases of alignments (somthing else
+             that is becoming more common) that include this
+             entry's sequence
+<LI>
+GENETIC/RESTRICTION MAPS:
+          the location of this entry's sequence on a genetic,
+          STS or restriction map (or some other map which does
+          not contain sequences, but sparser information)
+<LI>
+PUBLICATION:  other sequences published in the same article,
+              by the same author, ...
+</UL>
+The idea would be that these links specify the identifiers in other
+databases (possibly with some addition info), and the links could then
+be "traversed" using the cross-database index files described in the
+last TODO item.
+
+<P>   
+With the combination of multi-database index files, efficient single
+entry retrieval, these links between entries and the ability to parse
+as many database file formats as possible, I could easily see an
+application which takes in, say, an identifier and outputs HTML text
+containing that identifier's entry text with HTML links which rerun
+this program for the identifiers contained in the entry's "links".
+Using this, any WWW browser could then become a browser of biological
+database entries.  What could also be done is if this program were
+setup as a CGI application on a WWW server, then the browsers could
+work on remote databases (whose location could be determined by
+including, say, a "WWW-Remote" information field in the BIOSEQ entries
+of the databases), and this effectively would create a BioSeqWeb where
+users could browse biological databases as easily as Web pages are
+browsed today.
+
+<P>
+In BIOSEQ entries, design the syntax to allow cross-database
+specifications (i.e., an entry can contain a BIOSEQ search
+specification for a different BIOSEQ entry, such as maybe
+genbank:{inv,phg}"), and add the ability to specify wildcarded aliases
+(like "????:(pdb@@@@.ent)" in the BIOSEQ entry for PDB would match the
+search "pdb:102d" to file "/databases/pdb/pdb102d.ent").
+
+<P>
+Figure out how best to incorporate the ASN file formats (the text
+version, the object version, the CD-ROM version) into the package.
+Since it appears to present the same problems, figure out how to
+incorporate the AceDB file formats and schema into the package.
+
+<P>
+Add functions seqfcitation and seqffeature, design and add
+data structures to store Author citations (or references) and
+sequence features, and add _citation and _feature functions
+to retrieve that information from the various file formats.
+
+<P>
+Design a generic multiple sequence alignment file format, which
+can be used both for single alignments and for alignment databases.
+Also, develop a SEQALIGN structure that can be used in conjunction
+with the sequences to output alignment entries.
+
+<P>
+<HR>
+
+<P>
+<H1>Medium Things</H1>
+
+Add functions seqfpush and some seqfwrite functions which can be used
+for writing multiple sequence entries.  Also, add some seqfopen
+functions which can take a list, array or string of filenames to read
+(such as the output of bioseq_parse).
+
+<P>
+Extend the comment annotation capability to allow users to
+add or replace the text of any set of fields of an entry, without
+disturbing the other information in the entry.
+
+<P>
+Extend the organism handling and date handling so that they are
+more complete and more intelligent.
+
+<P>
+Optimize the _getinfo, _putseq and _annotate functions.
+
+<P>
+Add a "mixed" file format, where the entries in the file can
+be different formats (and determine_format is used each time
+to determine the next entry's format).
+
+<P>
+In fmtseq, extend the itemlist support with `-additem' -delitem' and
+figure out how to allow reordering of the sequences (in particular, in
+combination with the bigalign mode of parsing the FASTA and BLAST
+output).
+
+
+<P>
+<HR>
+
+<P>
+<H1>Little Things</H1>
+
+Finish commenting the code.
+
+<P>
+Document what errors and seqferrno values can occur for each
+function in the interface.
+
+<P>
+Add a function `seqfsetclass' which can restrict the classes of
+file formats that the package should support (i.e., used when
+programs don't want to be able to read FASTA output, for example).
+
+<P>
+Add an `alphastr' field to SEQINFO which gives the actual string
+specifying the alphabet, rather than just the DNA, RNA and PROTEIN
+values.
+
+<P>
+Add auto-closing (using atexit) when writing ASN.1, PHYLIP and
+Clustalw files.  Also, do debackslashing and backslashing of quotes
+inside quoted strings in asn_{getinfo,putseq,annotate}.
+
+<P>
+Change the add_{comment,description,organism} to maintain tab
+characters, and change the putseq functions to output the
+comment/descr/organism with tabs.
+
+<P>
+When the putseq functions are outputting the description/organism,
+adding periods or other tail characters may make the lines too
+long.  This also happens in a number of places in asn_putseq.
+
+
+<P>
+<HR>
+
+<P>
+<H1>Database and File Format Questions To Be Answered</H1>
+    
+<P>
+Is there an official description of the IG/Stanford format?  I worked
+from the description in the "Formats" file of the readseq software
+distribution.
+
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 26, 1996
+</ADDRESS>
+</BODY>

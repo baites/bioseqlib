@@ -1,0 +1,269 @@
+<HTML>
+<HEAD>
+<TITLE>README  -  Readme File for the SEQIO Package</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>README  -  Readme File for the SEQIO Package</H1>
+
+<HR>
+
+<P>
+The SEQIO package is a set of C functions which can read and write
+biological sequence files formatted using various file formats and
+which can be used to perform database searches on biological
+databases.  All of the code is packaged together into a single file,
+making it easy to incorporate into your programs.  Here are the files
+included in the SEQIO package distribution.
+<P>
+<UL>
+<LI> seqio.c  -  The code
+<LI> seqio.h  -  The header file
+<LI> <A HREF="seqio_bioseq.html">bioseq.txt</A>  -  An example BIOSEQ
+file which contains default descriptions for a number of databases<BR>
+(see "<A HREF="seqio_user.html#bioseq">user.doc</A>" for more
+information on BIOSEQ files)
+<P>
+<LI> <A HREF="seqio_doc.html">doc/seqio.doc</A>  -  The main documentation
+describing the SEQIO interface
+<LI> <A HREF="seqio_qref.html">doc/quickref.doc</A>  -  A Quick Reference
+Guide to the interface
+<LI> <A HREF="seqio_progr.html">doc/programr.doc</A>  -  A "How-To" Guide
+for using the SEQIO package<BR> 
+(canonical examples and programming tips, issues in porting SEQIO to a
+new machine) 
+<LI> <A HREF="seqio_user.html">doc/user.doc</A>  -  Documentation for the
+users of your programs, not you the user of SEQIO<BR>
+(short descriptions of file formats, how to
+specify database searches, and so on)
+<LI> <A HREF="seqio_format.html">doc/format.doc</A>  -  Documentation
+describing the specific criteria SEQIO uses when parsing and
+outputting the different file formats.
+<P>
+<LI> Makefile  -  A simple makefile for seqio.o, fmtseq and the examples
+<LI> fmtseq.c  -  A file conversion program
+<LI> idxseq.c  -  A database indexing program
+<LI> example1.c  -  A simple keyword searching program
+<LI> example2.c  -  A sequence information display program
+<LI> example3.c  -  A feature extraction program
+<LI> grepseq.c  -  A fixed-width motif searching program
+<LI> typeseq.c  -  A sequence output (`cat' or `fetch') program
+<LI> wcseq.c  -  A sequence/entry counting program
+<P>
+<LI> <A HREF="fmtseq_doc.html">doc/fmtseq.doc</A>  -  Documentation for fmtseq
+<LI> <A HREF="idxseq_doc.html">doc/idxseq.doc</A>  -  Documentation for idxseq
+<LI> <A HREF="examples_doc.html">doc/examples.doc</A>  -  Documentation for
+the examples
+<P>
+<LI> <A HREF="seqio_toc.html">html/seqio_toc.html</A> - A table of
+contents for the HTML pages
+<UL>
+(useful as the main page of a local WWW copy of the documentation)
+</UL>
+<LI> html/* - All of the *.doc files in HTML format (with crosslinks).
+<P>
+<LI> README  -  This file
+<LI> <A HREF="seqio_changes.html">CHANGES</A>  -  A list of changes
+and bug fixes made to the code and documentation
+<LI> <A HREF="seqio_todo.html">TODO</A>  -  What will come next (that
+I know about)
+</UL>
+
+<HR>
+
+<P>
+<H1><A NAME="install">Installation Notes</A></H1>
+
+To install the programs associated with the package, and to setup your
+system to use those programs, perform the following steps.
+<P>
+<OL>
+<LI>
+Uncompress (using gunzip) and untar the release.  This will create a
+sub-directory "seqio-1.2" below where you untar it.
+<LI>
+Enter the sub-directory and run make to compile all of the programs.
+The makefiles included in the release are very simple, but since the
+code itself should be cross-platform portable, the makefile doesn't
+have to be complex.  The one thing you might have to customize is the
+compiler name and options.  The makefile is configured to use the gcc
+compiler.  If you do not have gcc, then edit the CC and CFLAGS
+makefile variables for the C (or C++) compiler you do have.  The only
+flag really necessary for the compilation is the optimization flag (it
+will make a difference in the programs' running time).
+<LI>
+To install the programs elsewhere, copy "fmtseq", "idxseq", "grepseq",
+"typeseq" and "wcseq" to the executable directory.  These are the only
+programs that really have the potential to be considered useful
+application programs.
+<LI>
+If you have support for local documentation on the Web, then either
+create a link to the file "html/seqio_toc.html", or copy all of the
+files in the "html" directory and create the link to "seqio_toc.html"
+in the destination directory.
+<LI>
+Create a BIOSEQ file describing all of your databases (an example is
+given in "bioseq.txt"), and, if you want to allow single entry access
+to the entries of those databases, run the "idxseq" program on each of
+them.  Tell any users of the program to include that filename as part
+of their BIOSEQ environment variable list of files.
+<LI>
+Enjoy.
+</OL>
+
+<P>
+<H2><A NAME="package_use">Using the SEQIO Package Itself</A></H2>
+
+To be able to use the package itself, you should be familiar with
+reading and writing files using the C stdio package and with doing
+dynamic allocation of memory using malloc and free.  To use the SEQIO
+package in your program, simply copy the files "seqio.c" and "seqio.h"
+to your program directory, include the header file in any program
+files that use the SEQIO package, and compile the package along with
+your program.
+
+<P>
+At this point in time, the SEQIO package has been tested using gcc on
+Unix systems running SunOS, Solaris, Ultrix, IRIX and Windows NT, and
+using g++ on Ultrix.  The code has been written to the ANSI C
+standard, so you will need an ANSI C/C++ compiler in order to compile
+the package.  One suggestion I have is that you turn on optimization
+when compiling the SEQIO package.  It will significantly improve the
+package's efficiency.  Also, compiling the package may take several
+minutes, as the code is around 20,000 lines (this will get shorter in
+a later version (of course, I keep saying that every version)).
+
+<P>
+If you plan to use this package and wish to receive notices about
+updates and bug fixes, please send mail to knight@cs.ucdavis.edu.  In
+that mail, specify whether you just want a notice about a new version
+of the package, or you want the patch file or complete release
+automatically sent to you.<BR>
+<I>(NOTE:  If you see ANYTHING you think is either wrong, or should be
+changed, please let me know.  If it is wrong, I'll fix it.  If I think
+it isn't, I'll tell you why, and also tell you how you can get what
+you want.)</I>
+
+<P>
+Any use of the SEQIO package should be accompanied with
+acknowledgements and copyright notices in the documentation of any
+software developed using the package or derived from the package.
+Something along the lines of:
+<blockquote>
+    This software uses the SEQIO package for reading and writing
+    sequences.  Copyright (c) 1996 by James Knight at Univ. of
+    California, Davis.
+</blockquote>
+Any papers describing software using the SEQIO package, or whose
+results were significantly aided by the use of the SEQIO package
+(except when the use was internal to a larger program), should include
+an acknowledgement and citation.  The citation should be something
+like:
+<blockquote>
+    Knight, James  "SEQIO:  A C Package for Reading and Writing Sequences,"
+      distributed by the author.
+</blockquote>
+(As soon as I get a paper out about the package, this will become a
+reference to the paper.)
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="author">Author and Acknowledgements</A></H1>
+
+<blockquote>
+James Knight<BR>
+Dept. of Computer Science<BR>
+Univ. of California, Davis<BR>
+Davis, CA 95616<BR>
+E-mail:  <A HREF="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</A><BR>
+WWW-Site: <A HREF="http://wwwcsif.cs.ucdavis.edu/~knight">http://wwwcsif.cs.ucdavis.edu/~knight</A>
+</blockquote>
+
+Send any bug reports, new database/file-format information, comments,
+complaints or extension requests to
+<A HREF="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</A>.
+
+<P>
+This work was supported foremost by Dan Gusfield at UCDavis, by grant
+DE-FG03-90ER60999 from the Department of Energy and by the Aspen
+Center for Physics.
+
+<P>
+My thanks to Don Gilbert for collecting descriptions of the various
+formats and including them with his "readseq" program.  I never used
+his code, but the `Formats' file was quite useful in writing the
+package, and I did look through his code when writing "fmtseq".
+Thanks also to Russell Malmberg who stuck with all of my attempts to
+port the package to Windows NT/95 until it finally compiled and ran.
+Thanks to Kay Hofmann for describing the MSF format in a detailed
+enough form for implementation.
+
+<P>
+<HR>
+
+<P>
+<H1><A NAME="copyright">COPYRIGHT NOTICE</A></H1>
+
+In this version, the following copyright notice holds for the SEQIO
+package, its documentation and the fmtseq and idxseq programs.  All of
+the example programs are public domain, and can be used and rewritten
+without any acknowledgements (although, it would be the polite thing
+to do).
+
+<P>
+Please note however that in a future version, some programs added to
+the release may have a more restrictive copyright (those programs
+will be restricted to non-commercial use because of the original
+sources used to derive the programs).  However, the SEQIO package,
+fmtseq, idxseq and the example programs will always be freely
+available for commercial or non-commercial use, now and into the
+future.
+
+<P>
+The copyright for the SEQIO package, its documentation and the fmtseq
+and idxseq programs:
+<PRE>
+  Copyright (c) 1996 by James Knight at Univ. of California, Davis
+
+  Permission to use, copy, modify, distribute and sell this software
+  and its documentation is hereby granted, subject to the following
+  restrictions and understandings:
+
+    1) Any copy of this software or any copy of software derived
+       from it must include this copyright notice in full.
+
+    2) All materials or software developed as a consequence of the
+       use of this software or software derived from it must duly
+       acknowledge such use, in accordance with the usual standards
+       of acknowledging credit in academic research.
+
+    3) The software may be used freely by anyone for any purpose,
+       commercial or non-commercial.  That includes, but is not
+       limited to, its incorporation into software sold for a profit
+       or the development of commercial software derived from it.
+ 
+    4) This software is provided AS IS with no warranties of any
+       kind.  The author shall have no liability with respect to the
+       infringement of copyrights, trade secrets or any patents by
+       this software or any part thereof.  In no event will the
+       author be liable for any lost revenue or profits or other
+       special, indirect and consequential damages. 
+</PRE>
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 29, 1996
+</ADDRESS>
+</BODY>
