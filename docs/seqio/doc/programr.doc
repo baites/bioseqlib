@@ -1,0 +1,1286 @@
+SEQIO -- A Package for Sequence File I/O 
+
+
+PROGRAMR.DOC - Guide to Using the SEQIO Package
+***********************************************
+
+The main documentation on the SEQIO interface is given in "seqio.doc
+".This file is more of a "how-to" guide to using the package. These are
+the ideas I had for using the package while I was designing and
+implementing it, broken up into five sections: 
+
+ 1. reading sequences and database searches, 
+ 2. extracting information from entries, 
+ 3. writing/converting/annotating entries, 
+ 4. BIOSEQ stuff (database information processing), 
+ 5. Error handling. 
+
+At the end of the file, there is an additional section discussing how to 
+port the package to other machines. 
+
+I'm going to concentrate on the interface itself, so in all of the examples
+below, you will see constants for things like filenames, formats,
+database names, and so on. In a normal program those things would be
+specified as part of the user interface, but here I'm going to make them
+as simple as possible in order to illustrate the interface functions more
+clearly. 
+
+Jim 
+
+
+
+Reading Sequences and Database Searches
+***************************************
+
+This package actually evolved from a module of some sequence
+analysis software I was writing, as well as the three or four programs I
+had designed to some extent and was planning to implement (and still
+am). In all of those programs, I needed a module to read in the
+sequences in a sequence file, and I had three goals for that module: 1)
+make it simple for the rest of the program to use, 2) make it as fast as
+possible, and 3) remove as many size limitations as possible (from
+sequence size to maximum line length and so on). Those goals, and the
+focus on reading files and databases, remained in the design of the
+SEQIO package. However, in this file you won't hear much about goals
+2 and 3, because they don't show up when your programs are written,
+only when they execute. 
+
+A program that reads a sequence file or database looks a lot like using
+the stdio package to do normal file I/O: it opens the file or database,
+repeatedly calls a function to read the next sequence, and closes the
+file or database when it hits EOF. 
+
+    int len;
+    char *seq;
+    SEQFILE *sfp;
+
+    if ((sfp = seqfopen("my_sequences", "r", "FASTA")) == NULL)
+      exit(1);
+
+    while ((seq = seqfgetseq(sfp, &len, 0)) != NULL) {
+      if (len > 0 && isa_match(seq, len)) {
+        /* Found a match */
+      }
+    }
+
+    seqfclose(sfp);
+
+This code snippet is an example of searching the sequences of a
+FASTA-formatted file for the sequences that matched (whatever it is
+you might want to match). To read a database instead of a file, just
+replace the "sfp = seqfopen(...)" call with "sfp = seqfopendb
+("genbank")", to read the GenBank database for example. Another
+simple change you can make to this example is to read all of the
+file/database entries, instead of the sequences those entries contain.
+To do that, simply replace the call to "seq = seqfgetseq(sfp,
+&len, 0)" with "entry = seqfgetentry(sfp, &len, 0)" and the
+entry text for each entry is returned. 
+
+With either or both of these alterations, the rest of the program will
+work in exactly the same way, with two minor exceptions. First, when
+the `seqfgetentry' for `seqfgetseq' substitution is made and the entries
+in the file or database contain more than one sequence, `seqfgetseq'
+will read each sequence in the entry, whereas `seqfgetentry' will only
+read the entry once regardless of how many sequences occur in the
+entry. 
+
+Second, when searching databases using `seqfopendb', a BIOSEQ file
+must have been created and the "BIOSEQ" environment variable must
+include that file. See the file "user.doc" for infomation on how to create
+BIOSEQ files. That file also describes the strings `seqfopendb' can take
+to specifying a database search. 
+
+Differences between SEQIO and stdio
+===================================
+
+There are some small differences between the SEQIO calls in the
+example above and the stdio calls used to do file I/O. First, the
+`seqfopen' function takes a third argument which specifies the format of
+the file being open. That argument either must be a string naming a
+supported file format (see "user.doc" and "format.doc" for the list of
+those formats), or must be NULL, in which case the format of the file is
+automatically determined from the text in the file. 
+
+Second, the arguments to `seqfgetseq' are different from any of the
+fget* functions in the stdio package. The reason is that one of the
+deficiencies of the stdio package (in my opinion) is that the
+programmer has to worry about where and how to store the characters
+read in. I wanted programs using this package to worry as little as
+possible about how to store the read-in sequences and entries. Thus,
+the SEQIO package always remembers a "current" sequence and entry,
+and the sequence, entry or information about the sequence can be
+retrieved as needed. 
+
+In addition, the package can return the sequence/entry/information
+character strings in one of two ways, either using an internal buffer or
+by malloc'ing a new buffer to store the string. The third argument to
+`seqfgetseq' is a flag telling how the sequence text should be returned
+(zero specifies an internal buffer and non-zero specifies a malloc'ed
+buffer). So, the `seqfgetseq' call above tells the SEQIO package to read
+the next sequence in the file, make that the "current" sequence, and
+return that sequence's text using its internal buffers. As another
+example, the following snippet shows how to accumulate all of the
+sequences of a file into an array, using malloc'ed buffers so that each
+sequence remains available until the malloc'ed buffer is freed: 
+
+    int i, len;
+    char *seq, *seqs[400];
+    SEQFILE *sfp;
+
+    if ((sfp = seqfopendb("swiss-prot")) == NULL)
+      exit(1);
+
+    for (i=0; i < 400 && (seq = seqfgetseq(sfp, NULL, 1)) != NULL; ) {
+      if (*seq != '\0')
+        seqs[i++] = seq;
+    }
+    seqfclose(sfp);
+
+    /* Do the analysis of the sequences. */
+
+    while (i > 0)
+      free(seqs[--i]);
+
+Giving a non-zero third argument to `seqfgetseq' tells the SEQIO
+package to malloc a new buffer for each sequence, so they can be kept
+around after the next call to the package (the internal buffers are
+reused, so their contents may be changed on the next call to a SEQIO
+function). 
+
+Also, note in this example that the second argument to the `seqfgetseq'
+function is NULL. One of the guarantees the SEQIO package makes is
+that the character strings of sequences and entries will be
+NULL-terminated strings, so you don't necessarily need the string's
+length to know where the sequence/entry ends. This also makes it easy
+to output the sequence or entry text, as in this version of the first
+example above which outputs the text of each entry whose sequence
+matches: 
+
+    while ((seq = seqfgetseq(sfp, &len, 0)) != NULL) {
+      if (len > 0 && isa_match(seq, len)) {
+        /* Found a match */
+        entry = seqfentry(sfp, NULL, 0);
+        fputs(entry, stdout);
+      }
+    }
+
+Note the use of `seqfentry' instead of `seqfgetentry'. The function
+`seqfentry' just returns the text of the "current" entry, and does NOT
+read the next entry in the file. With this use of a "current" sequence
+and entry, a program can get multiple pieces of information about a
+sequence/entry one piece at a time, without having to worry about
+getting everything it needs at once. 
+
+The third and fourth differences between the stdio package and the
+SEQIO package in these examples are slightly harder to see. They
+involve the handling of errors. The third difference is that the program
+simply exits when `seqfopen' returns NULL, seemingly without printing
+an error message, and the fourth difference is the use of "len > 0"
+and "*seq != '\0'" as additional tests to see if a sequence was
+returned by `seqfgetseq'. 
+
+The long answers for these differences are given in the Error Handling
+section and file "seqio.doc", where I talk about the error handling. The
+short answers are that the SEQIO package by default outputs error
+messages when an error occurs (but this can be disabled), and that the
+`seqfgetseq' and `seqfgetentry' functions are unique in that they return
+one of three values: 1) a string of characters on a successful read, 2)
+an empty string with length 0 if there is a problem reading the next
+sequence/entry (such as when the next entry contains no sequence),
+but that problem is not a fatal error, and 3) NULL if end-of-file is
+reached or a fatal error occurs (an error for which no more reading can
+be done). 
+
+The functions `seqfopen' and `seqfopendb' are the common ways to
+open a file/database, and `seqfgetseq', `seqfgetentry' and `seqfgetinfo'
+(described in the next section) are the common ways to read in the
+sequences/entries in the file/database. There are a couple of other
+ways, using the functions `seqfopen2', `seqfread' and `seqfgetrawseq.
+Those functions are described in file "seqio.doc". 
+
+
+
+Extracting Information from Entries
+***********************************
+
+For most of the sequence file formats that have been created (and most
+of the formats supported by the package), the entries in a file contain
+quite a bit more information than just the sequence itself. For instance,
+in the GenBank database, the sequence characters make up only a
+third of the characters in the database files. The rest of the database
+contains information about those sequences (identifiers, descriptions,
+references, features, and so on). In designing the SEQIO package, I
+tried to do two things, provide a method to automatically extract a
+number of the more common (and less complex) pieces of information
+stored in a sequence, and make it as easy as possible to extract other
+information. 
+
+The Raw Sequence
+================
+
+One such piece of information that is often needed is the "raw"
+sequence text, giving both the sequence characters and any alignment
+or structural notation characters that are associated with the
+sequence. In many entries, the sequence is expressed not by itself, but
+in terms of an alignment of that sequence with others (such as the
+sequences in the other entries of the file). 
+
+The function `seqfrawseq' can be used to retrieve both the sequence
+and the alignment/structure information specified with the sequence.
+This function works exactly the same as `seqfentry' and `seqfsequence',
+except that the string returned by the functions is different. Function
+`seqfentry' returns the complete entry text, `seqfsequence' returns
+only the characters of the sequence (typically all of the alphabetic
+characters), and `seqfrawseq' returns the sequence and the
+alignment/structure characters (typically all characters except
+whitespace and digits). 
+
+The SEQINFO Structure
+=====================
+
+Other information contained in an entry is extracted and typically
+returned through the use of a SEQINFO structure defined by the
+package. The file "seqio.h" defines the SEQINFO structure used to
+store information that the SEQIO package extracts from an entry. In
+addition, there are interface functions which can be used to retrieve
+each of the individual fields in the SEQINFO structure. The SEQINFO
+structure is defined as follows: 
+
+typedef struct {
+  char *dbname, *filename, *format;
+  int entryno, seqno, numseqs;
+
+  char *date, *idlist, *description;
+  char *comment, *organism, *history;
+  int isfragment, iscircular, alphabet;
+  int fragstart, truelen, rawlen;
+} SEQINFO;
+
+The structure contains six fields which the SEQIO package has about
+the current sequence: 
+
+dbname 
+   The name of the database being searched (if this is a search of
+   an actual database). 
+filename 
+   The name of the file currently being read. 
+format 
+   The format of the file (and the current entry). 
+entryno 
+   The location of the current entry in the file (if entryno is 10, then
+   the current entry is the tenth entry in the file). 
+seqno 
+   The location of the current sequence in the current entry (if
+   seqno is 3, then the current sequence is the third in the current
+   entry). 
+numseqs 
+   The number of sequences contained in the current entry. 
+
+So, the current sequence's location is the `seqno' sequence of the
+`entryno' entry of the file `filename' (possibly of the database
+`dbname'). The `format' string gives the entry's format, and the entry
+contains `numseqs' sequences. 
+
+The other twelve fields are information extracted from the current entry
+(see "format.doc" for the details about which information is retrieved
+for each file format): 
+
+date 
+   A single date giving the last time the entry was either created or
+   updated. Its format should be day-month-year, as in
+   31-JAN-1995. 
+idlist 
+   The list of identifiers given in the entry. The idlist's form is a
+   string containing vertical bar separated list of identifiers, each of
+   whose form consists of an identifier prefix, a ':' and the identifier.
+   See file "user.doc" for more information about identifiers and
+   identifier prefixes. 
+description 
+   A description of the sequence or sequences in the entry. This is
+   the "Title" or "Definition" line in some file formats. This string
+   should consist of a single "line" of text, although it can be of any
+   length. So, no newlines should appear in this text (they are
+   removed and added when the description is read from and
+   output in the sequence entries). 
+comment 
+   A block of text giving a comment about the sequence. The string
+   can contain one or more lines of any length. The one restriction
+   to the text appearing in a comment is that any block of lines at
+   the end of an entry's comment section where each line begins
+   with the string "SEQIO" is reserved for other use by the package
+   (this block holds extra identifiers or the `history' lines). 
+organism 
+   The name of the organism the sequence was taken from. Right
+   now, this field can contain any single "line" of text, although I
+   would like to standardize the contents of this field. It's on my
+   TODO list. 
+history 
+   This holds the lines of text placed in the comment section of
+   entries which describe previous SEQIO operations on this entry,
+   i.e., it holds the history of alterations and updates made to this
+   entry by programs using the SEQIO package. Any block of lines
+   at the end of a comment section where each line begins with the
+   string "SEQIO" is not considered part of the comment, but part
+   of the history. 
+isfragment 
+   This integer is non-zero if the sequence is a fragment of a larger
+   sequence, and zero if the sequence is complete (or if it is not
+   known whether the sequence is a fragment). 
+iscircular 
+   This integer is non-zero if the sequence is a circular sequence,
+   and zero if it is a linear sequence (or if it's circularity is not
+   known). 
+alphabet 
+   This integer is one of the predefined constants DNA, RNA,
+   PROTEIN or UNKNOWN. Its value is UNKNOWN unless either
+   the database's BIOSEQ entry (information field "Alphabet") or
+   the entry itself explicitly specifies the alphabet. The package
+   does not try to guess the alphabet. 
+fragstart 
+   When the sequence is a fragment of a larger sequence and the
+   location of this fragment in the larger sequence is known, this
+   value gives the starting position of the fragment. If this value is
+   not known (or the sequence is complete), fragstart is set to 0. 
+truelen 
+   This is the "true" length of the sequence, i.e., the length of the
+   sequence without any gap characters or notational characters.
+   Typically, these are just the alphabetic characters. 
+rawlen 
+   This is the "raw" length of the sequence, i.e., the length of the
+   sequence which includes the gap and notational characters.
+   Typically these are all characters except whitespace and digits. 
+
+Accessing this information for an entry is very similar to that of
+accessing the sequence and entry text. The functions `seqfgetinfo' and
+`seqfinfo' work along the lines of `seqfgetentry' and `seqfentry', and so
+the following code snippet finds and outputs all of the entries with
+circular sequences: 
+
+    char *entry;
+    SEQINFO *info;
+    SEQFILE *sfp;
+
+    if ((sfp = seqfopendb("genbank")) == NULL)
+      exit(1);
+    
+    while ((info = seqfgetinfo(sfp, 0)) != NULL) {
+      if (info->iscircular) {
+        entry = seqfentry(sfp, NULL, 0);
+        fputs(entry, stdout);
+      }
+    }
+    seqfclose(sfp);
+
+and this code snippet finds and outputs the entry (or entries) with a
+given accession number: 
+
+    char *s, *t, *idlist, *entry;
+    SEQINFO *info;
+    SEQFILE *sfp;
+
+    if ((sfp = seqfopendb("genbank")) == NULL)
+      exit(1);
+    
+    while (seqfread(sfp, 1) == 0) {
+      idlist = seqfidlist(sfp, 0);
+      if (idlist != NULL) {
+        /*
+         * Scan the idlist, looking for an identifier whose prefix is
+         * "acc" and whose number matches the accession.
+         */
+        s = idlist;
+        while (*s) {
+          for (t=s; *s && *s != '|'; s++) ;
+
+          if (strncmp(t, "acc:X01828", 10) == 0) {
+            entry = seqfentry(sfp, NULL, 0);
+            fputs(entry, stdout);
+            break;
+          }
+
+          if (*s) s++;
+        }
+      }
+    }
+    seqfclose(sfp);
+
+A couple points to note about these examples and the fields of the
+SEQINFO structure. First, the string `idlist' is a vertical bar separated
+list of identifiers, where each identifier consists of a prefix naming the
+database or type of identifier and a suffix giving the actual id. See file
+"user.doc" for a complete description of these identifiers and identifier
+prefixes. 
+
+Third, the functions like `seqfidlist' are similar to `seqfsequence',
+`seqfentry', and `seqfinfo' in that they return some information about
+the "current" sequence/entry. The package has one of these access
+functions for every field in the SEQINFO structure (i.e., `seqfdate',
+`seqfiscircular', ...). For the SEQINFO fields that are character strings,
+these functions take two arguments, where the second argument is just
+like the third argument of `seqfsequence' or `seqfentry'. It tells whether
+the package should return the character string using an internal buffer
+or in a malloc'ed buffer. (Again, be aware that the internal buffer strings
+are guaranteed to remain unchanged only upto the next call to the
+SEQIO package.) 
+
+Fourth, the previous point raises the question of what happens when
+`seqfinfo' or `seqfgetinfo' is called with a second argument of 1, and the
+SEQINFO structure is returned in a malloc'ed buffer. Where do the
+character string fields of the structure point to? And will it be hard to
+free up the SEQINFO structure and its character strings? When
+`seqinfo' or `seqfgetinfo' is called with a second argument of 1, they
+actually malloc one large buffer, and store both the SEQINFO structure
+and the character string fields in that one buffer. And since the
+SEQINFO structure is placed at the beginning of the malloc'ed buffer,
+simply free'ing the SEQINFO structure will automatically free up all of
+its character strings. 
+
+And fifth, note the use of `seqfread' in the second example. It was used
+because there is no `seqfgetidlist' function in the package. The only
+functions which both read the next entry/sequence and return
+something about that entry/sequence are `seqfgetseq',
+`seqfgetrawseq', `seqfgetentry' and `seqfgetinfo'. To perform searches
+using the other information functions, you must use one of the four
+entry/sequence reading functions listed in this paragraph. Also, in case
+the arguments to `seqfread' are confusing, the second argument to
+`seqfread' is NOT the same as the second argument to `seqfidlist'. The
+second argument to `seqfread' specifies whether to read the next
+sequence (if zero) or to read the next entry (if non-zero). 
+
+Seqfmainid, Seqfmainacc, Seqfoneline and Seqfallinfo
+====================================================
+
+The SEQIO package includes four other functions for accessing and
+collecting information about each sequence: `seqmainid', `seqfmainacc',
+`seqfoneline' and `seqfallinfo'. 
+
+`Seqfmainid' and `seqfmainacc' are variations of the `seqfidlist' which
+only return a "main" identifier, instead of returning the whole identifier
+list. This is useful in cases where you don't necessarily want to search
+the complete list of identifiers, but just want a single identifier to
+associate with a sequence. `Seqfmainid' returns the "main" identifier
+for a sequence, which specifically is the first non-accession identifier,
+if one exists, or the first accession number in the entry otherwise. The
+`seqfmainacc' function returns the first accession number in the entry,
+if one exists. Both have the same arguments as `seqfidlist', and both
+return a NULL-terminated string containing the single identifier, with
+an identifier prefix. So, the example above which searches for an
+accession number could be rewritten as the following, if we were just
+looking for the entry whose main accession number is "X01828": 
+
+    char *mainid, *entry;
+    SEQFILE *sfp;
+
+    if ((sfp = seqfopendb("genbank")) == NULL)
+      exit(1);
+    
+    while (seqfread(sfp, 1) == 0) {
+      if ((mainid = seqfmainid(sfp, 0)) != NULL &&
+          strncmp(mainid, "acc:X01828", 10) == 0) {
+        entry = seqfentry(sfp, NULL, 0);
+        fputs(entry, stdout);
+      }
+    }
+    seqfclose(sfp);
+
+The function `seqfoneline' can be used to create a "oneline"
+description of the information for an entry. A number of programs (and
+a number of file formats) have situations where they would like to
+present the user with a relatively compact, one line description of a
+particular sequence. The SEQIO package defines a standard format for
+this type of description for biological sequence, and `seqfoneline' is
+the function the package provides to construct these descriptions. The
+argument list for `seqfoneline' is the following: 
+
+int seqfoneline(SEQINFO *info, char *buffer, int buflen, int idonly);
+
+where `info' is a SEQINFO structure, `buffer' is a character buffer where
+the oneline description will be stored, `buflen' is the length of the
+buffer, and `idonly' will be discussed momentarily. 
+
+This function operates in a similar manner as `fgets', in that the string it
+constructs is stored in the buffer passed to it. It differs from fgets in two
+major respects (apart from the fact that it does no file reading). The first
+is that the oneline description is guaranteed to both fit in the buffer and
+to be NULL-terminated (i.e., no oneline description will ever be longer
+than "buflen-1" characters). The second is that the function returns
+the length of the oneline description stored in `buffer', instead of a
+pointer to buffer itself. Hopefully, both of these differences will be more
+useful in practice than the way fgets works. 
+
+The final argument to `seqfoneline' is an `idonly' flag specifying
+whether the "oneline description" should in fact just contain a single
+identifier for the sequence. This flag is useful in cases where you just
+want a single identifier string that is guaranteed to be no longer than a
+certain length (most notably in the output of the PHYLIP, Clustalw and
+MSF formats). When the flag is non-zero, the string stored in `buffer' is
+guaranteed to contain a single word identifier or description, and is
+guaranteed not to contain any whitespace. 
+
+The final variation on accessing information from an entry is `seqfallinfo'.
+This function works exactly like `seqfinfo', except that the comment field
+of the SEQINFO structure returned contains a different string. Using
+`seqfinfo', the comment string returned consists of whatever comment
+appears in the entry. With `seqfallinfo', the comment string contains
+the complete header of the entry. The specifics of what string this is
+depends on the particular file format, but generally it consists of all of
+the lines of the entry except the sequence lines. 
+
+Extracting Other Information
+============================
+
+The code snippets above illustrate the two ways of using the SEQIO
+package to extract information from an entry. One way is to use
+`seqfgetinfo' or `seqfinfo' to have the SEQIO package extract all of the
+information it can from an entry, and then to access the fields of the
+SEQINFO structure to get that information. The other way is to use the
+access functions for the SEQINFO fields (`seqfidlist', `seqfiscircular',
+and so on) to get one or more pieces of information from the entry. 
+
+If neither of those ways can get the information you're looking for, the
+third way of getting information from a sequence is to get the entry's
+text and scan that text for the information, as in this example which
+outputs all entries in the file "alu.human" of the "REPBASE" database
+which are classified in the "Alu-J" region: 
+
+    char *entry, *s;
+    SEQFILE *sfp;
+
+    if ((sfp = seqfopendb("repbase:alu.human")) == NULL)
+      exit(1);
+    
+    while ((entry = seqfgetentry(sfp, NULL, 0)) != NULL) {
+      if (strstr(entry, "\nFT                   \\rpt_family=\"Alu-J\""))
+        fputs(entry, stdout);
+    }
+    seqfclose(sfp);
+
+This works, because when looking at the "alu.human" file, the
+sequences are classified by the line 
+
+FT                   \rpt_family="Alu-J"
+
+Thus, by reading each entry and doing a simple scan for that particular
+line, I can extract the appropriate entries. And of course, more
+complicated (or robust) searches of the entries could be written, but
+the point here is that the SEQIO package takes care of all of the file I/O
+and simplifies the programmer's task to just implementing the
+scanning. 
+
+
+
+Writing, Creating and Annotating Entries
+****************************************
+
+Writing Entries
+===============
+
+The process for writing sequences and entries is very similar to that of
+the stdio package: open a file, call a function to write each entry, close
+the file. The difference is that the function which writes each entry takes
+a sequence and a SEQINFO structure as its arguments. Because of
+this, the easiest example to give is actually a file format conversion
+program. This one converts from EMBL to GenBank: 
+
+    int len;
+    char *seq;
+    SEQINFO *info;
+    SEQFILE *insfp, *outsfp;
+
+    if ((insfp = seqfopen("my_sequences", "r", "embl")) == NULL)
+      exit(1);
+    if ((outsfp = seqfopen("my_seqs.2", "w", "genbank")) == NULL)
+      exit(1);
+
+    while ((seq = seqfgetseq(insfp, &len, 0)) != NULL) {
+      if (len > 0 && (info = seqfino(insfp, 0)) != NULL)
+        seqfwrite(outsfp, seq, len, info);
+    }
+    seqfclose(insfp);
+    seqfclose(outsfp);
+
+The SEQIO package also contains a `seqfconvert' function, which can
+simplify this code just a little bit (although there's not much farther that
+you can go): 
+
+    int len;
+    char *seq;
+    SEQINFO *info;
+    SEQFILE *insfp, *outsfp;
+
+    if ((insfp = seqfopen("my_sequences", "r", "embl")) == NULL)
+      exit(1);
+    if ((outsfp = seqfopen("my_seqs.2", "w", "genbank")) == NULL)
+      exit(1);
+
+    while (seqfread(insfp, 0) != NULL)
+      seqfconvert(insfp, outsfp);
+
+    seqfclose(insfp);
+    seqfclose(outsfp);
+
+For the function `seqfopen', its second argument is the same as the
+second argument to `fopen', except that `seqfopen' only supports
+reading ("r"), writing ("w") and appending ("a") modes. Also, when
+writing a file, the third `seqfopen' argument specifying the format must
+be given. It cannot be NULL. 
+
+Creating New Entries
+====================
+
+The `seqfwrite' function uses the sequence and the 12 entry
+information fields of the SEQINFO structure (date, idlist, description,
+comment, organism, history, isfragment, iscircular, alphabet, fragstart,
+truelen, rawlen) when outputting the entry. It does not use the other six
+SEQINFO fields. Also, any of the character string fields may be either
+NULL or the empty string, in which case `seqfwrite' assumes that that
+information is not available. The function does not require that all of the
+fields be filled with information (it does the best it can with the
+information it's given). The only requirement `seqfwrite' makes on its
+arguments is that a non-empty sequence is given. It cannot output
+entries with no sequence. 
+
+So, if you want to create new entries containing information that you
+compute using some other method, simply declare a SEQINFO
+structure, fill in its fields with the strings and values you've computed,
+and pass it and the sequence to `seqfwrite'. 
+
+    int len;
+    char *seq;
+    SEQINFO info;
+    SEQFILE *insfp, *outsfp;
+
+    if ((outsfp = seqfopen("new_seqs", "w", "sprot")) == NULL)
+      exit(1);
+
+    while (/* more entries to create */) {
+      memset(&info, 0, sizeof(SEQINFO));
+
+      /* Perform some computation to get a sequence and to fill in the
+         fields of the SEQINFO structure. */
+
+      seqfwrite(outsfp, seq, len, &info);
+    }
+    seqfclose(outsfp);
+
+The SEQINFO structure has been defined so that all of the default
+values for the fields are 0 (or NULL for character strings). Thus, setting
+all of the bytes of the structure to 0 sets all of the default values. 
+
+Annotating Existing Entries
+===========================
+
+The function `seqfannotate' provides a solution to the common
+problem of associating new information with an existing entry and its
+sequence. A biologist runs a program or performs a database search to
+find entries or sequences with a particular feature or pattern, i.e., some
+new piece of information about that sequence. It would be nice to be
+able to tag that entry with the new information. But, the question is
+where to store the information? Keeping a separate file for the new
+information can become a management headache, and using `seqfinfo'
+and `seqfwrite' (or their cousins in other sequence I/O packages)
+eliminates a lot of the other information the entry holds. The
+'seqfannotate' function remedies this problem by allowing you to insert
+new text as a comment in an entry as that entry is being output, so that
+the outputted entry will contain all of the information in the original
+entry plus the new, inserted information. 
+
+The function takes a SEQFILE pointer (open for writing), an entry and a
+string, and it inserts the string into the comment section of the entry as
+it is outputting the entry. The arguments for `seqfannotate' are the
+following: 
+
+  int seqfannotate(SEQFILE *sfp, char *entry, int entrylen,
+                   char *newcomment, int flag)
+
+where `sfp' is the SEQFILE structure, `entry' and `entrylen' give the
+necessary information about the entry, `newcomment' is the string to
+be inserted, and `flag' tells whether or not to retain any existing
+comments in the entry (zero says to remove all other comments and
+non-zero says to retain the comments). As an example, here is the
+example program given at the beginnning of this file, extended so that it
+adds the matching positions to the entry text. 
+
+    int len, entrylen;
+    char *seq, *entry, *str;
+    SEQFILE *sfp, *sfpout;
+
+    if ((sfp = seqfopen("my_sequences.3", "r", "pir")) == NULL)
+      exit(1);
+
+    if ((sfpout = seqfopen("-", "w", seqfformat(sfp))) == NULL)
+      exit(1);
+    
+    while ((seq = seqfgetseq(sfp, &len, 0)) != NULL) {
+      if (len > 0 && (str = isa_match(seq, len)) != NULL) {
+        /* Found a match */
+        entry = seqfentry(sfp, &entrylen, 0);
+        seqfannotate(sfpout, entry, entrylen, str, 1);
+      }
+    }
+    seqfclose(sfp);
+
+where the function `isa_match' now returns a character string such as 
+
+  "Prosite Pattern:  GLYCOSAMINOGLYCAN  (S-G-x-G)\nMatches: 10-16, 503-508.\n"
+
+instead of just a boolean flag. (Note: the string here is a literal version
+of the string that isa_match might return.) 
+
+One thing that might appear to be missing from the `seqfannotate' call
+is the format of the entry being passed to it. The format for the passed
+in entry is assumed to be the same as the format that was specified
+when the SEQFILE structure was opened for writing. (Note the use
+above of `seqfformat' when opening the output, and recall that giving
+"-" to `seqfopen' tells it to open standard input or standard output.) If
+the entry is not in the correct form, a parse error will occur and nothing
+will be output. 
+
+With the example program above, if the entry text given to
+`seqfannotate' were the following (to use an actual PIR entry): 
+
+ENTRY            CCMQR      #type complete
+TITLE            cytochrome c - rhesus macaque (tentative sequence)
+ORGANISM         #formal_name Macaca mulatta #common_name rhesus macaque
+DATE             17-Mar-1987 #sequence_revision 17-Mar-1987 #text_change
+                   05-Aug-1994
+ACCESSIONS       A00003
+REFERENCE        A00003
+   #authors      Rothfus, J.A.; Smith, E.L.
+   #journal      J. Biol. Chem. (1965) 240:4277-4283
+   #title        Amino acid sequence of rhesus monkey heart cytochrome c.
+   #cross-references MUID:66045191
+   #contents     Compositions of chymotryptic peptides and sequences of
+                   residues 55-61 and 68-70
+   #accession    A00003
+      ##molecule_type protein
+      ##residues      1-104 ##label ROT
+CLASSIFICATION   #superfamily cytochrome c; cytochrome c homology
+KEYWORDS         acetylated amino end; electron transfer; heme; mitochondrion;
+                   oxidative phosphorylation; respiratory chain
+FEATURE
+   1                  #modified_site acetylated amino end (Gly) #status
+                        experimental\
+   14,17              #binding_site heme (Cys) (covalent) #status predicted\
+   18,80              #binding_site heme iron (His, Met) (axial ligands)
+                        #status predicted
+SUMMARY          #length 104  #molecular-weight 11605  #checksum 9512
+SEQUENCE
+                5        10        15        20        25        30
+      1 G D V E K G K K I F I M K C S Q C H T V E K G G K H K T G P
+     31 N L H G L F G R K T G Q A P G Y S Y T A A N K N K G I T W G
+     61 E D T L M E Y L E N P K K Y I P G T K M I F V G I K K K E E
+     91 R A D L I A Y L K K A T N E
+///
+
+the output from `seqfannotate' would be 
+
+ENTRY            CCMQR      #type complete
+TITLE            cytochrome c - rhesus macaque (tentative sequence)
+ORGANISM         #formal_name Macaca mulatta #common_name rhesus macaque
+DATE             17-Mar-1987 #sequence_revision 17-Mar-1987 #text_change
+                   05-Aug-1994
+ACCESSIONS       A00003
+REFERENCE        A00003
+   #authors      Rothfus, J.A.; Smith, E.L.
+   #journal      J. Biol. Chem. (1965) 240:4277-4283
+   #title        Amino acid sequence of rhesus monkey heart cytochrome c.
+   #cross-references MUID:66045191
+   #contents     Compositions of chymotryptic peptides and sequences of
+                   residues 55-61 and 68-70
+   #accession    A00003
+      ##molecule_type protein
+      ##residues      1-104 ##label ROT
+COMMENT    Prosite Pattern:  GLYCOSAMINOGLYCAN  (S-G-x-G)
+           Matches: 10-16, 503-508.
+
+           SEQIO annotation, lines 1-2.  02-Feb-1996
+CLASSIFICATION   #superfamily cytochrome c; cytochrome c homology
+KEYWORDS         acetylated amino end; electron transfer; heme; mitochondrion;
+                   oxidative phosphorylation; respiratory chain
+FEATURE
+   1                  #modified_site acetylated amino end (Gly) #status
+                        experimental\
+   14,17              #binding_site heme (Cys) (covalent) #status predicted\
+   18,80              #binding_site heme iron (His, Met) (axial ligands)
+                        #status predicted
+SUMMARY          #length 104  #molecular-weight 11605  #checksum 9512
+SEQUENCE
+                5        10        15        20        25        30
+      1 G D V E K G K K I F I M K C S Q C H T V E K G G K H K T G P
+     31 N L H G L F G R K T G Q A P G Y S Y T A A N K N K G I T W G
+     61 E D T L M E Y L E N P K K Y I P G T K M I F V G I K K K E E
+     91 R A D L I A Y L K K A T N E
+///
+
+Note the new COMMENT section between the REFERENCE and
+CLASSIFICATION sections. And when read back in again, the string
+returned by `seqfcomment' would be the string 
+
+  "Prosite Pattern:  GLYCOSAMINOGLYCAN  (S-G-x-G)\nMatches: 10-16, 503-508.\n"
+
+Exactly what was inserted (because the original entry had no other
+comments). 
+
+
+
+BIOSEQ Stuff (Database Information Processing)
+**********************************************
+
+The first three sections present essentially all of the main functionality
+for reading and writing files and performing database searches. (There
+are a couple additional functions, but I'll leave you to read "seqio.doc"
+to find out what they are.) Sometimes, however, a program needs more
+control over the operations that are performed than the basic functions
+of the package permit. These next two sections describe additional
+features that can provide the extra control. 
+
+This section discusses the four of the five functions related to the
+BIOSEQ standard for specifying and searching databases. I assume in
+this section that you have read the parts of "user.doc" that relate to the
+BIOSEQ standard and have some idea about what a BIOSEQ file looks
+like. Please go read that text first. 
+
+The five BIOSEQ functions that are included in the SEQIO package
+(and in fact make up all of its functionality except for the standard itself)
+are `bioseq_read' which reads the BIOSEQ files, `bioseq_check' which
+can check to see if a database search specifier is valid, `bioseq_info'
+which is used to get an information field from a BIOSEQ entry,
+`bioseq_parse' which is used to get the list of files specified by a
+database search. and `bioseq_matchinfo' which is used to determine
+which BIOSEQ entry for a database has an information field with a
+particular value. This section talks about all of these functions except
+`bioseq_matchinfo'. 
+
+The function `bioseq_read' takes in the name of a file, reads the
+BIOSEQ entries in the file, checks the syntax of those entries, and
+stores all of the entry information in internal data structures. Those
+data structures are then used by the `bioseq_info', `bioseq_matchinfo'
+and `bioseq_parse' functions. 
+
+By default, the first files read are always the files specified by the
+"BIOSEQ" environment variable, if it is defined. This is done before any
+of the bioseq_* functions perform their operation. Then, each call to
+`bioseq_read' reads subsequent files. 
+
+The internal data structure used by the package is a list of the read-in
+entries, and the determination of which entry a database search
+specification refers to is performed by searching through the list. The
+entries in the list are stored in reverse order of the calls to
+bioseq_read, but in the given order within a specific call to
+bioseq_read. So, the first entry checked is always the first entry of first
+file from the last call to bioseq_read. From there, the rest of the entries
+in that last call are checked, and after the last entry of that last call, the
+first entry of the next to last call to bioseq_read is checked. This way,
+the later calls to `bioseq_read' will have priority over the previous calls
+to `bioseq_read' (or the "BIOSEQ" env. variable files), in case of
+duplicates. 
+
+Therefore, if you're writing a program and you want to allow the user to
+have multiple ways to specify BIOSEQ files (such as the BIOSEQ
+environment variable, plus other user-specified or program-specific
+files), use `bioseq_read' to read in the files in increasing priority, and
+the SEQIO package will always pick the highest priority BIOSEQ entry
+for each database. And, if you want the files specified by the "BIOSEQ"
+env. variable to have a higher priority than other files, simply call
+`bioseq_read' to reread the environment variable value. A BIOSEQ file
+can always be read in more than once, and the latest read will always
+override the entries from the previous read (unless the names of the
+BIOSEQ entries have changed between reads). 
+
+The function `bioseq_check' takes a database search specifier and
+checks whether it refers to a known database (i.e., whether a BIOSEQ
+entry exists for that database). It returns non-zero if the BIOSEQ entry
+exists, and zero otherwise. This can be used for a quick error check
+testing whether the specifier given by the user is valid or not. 
+
+The function `bioseq_info' is used to get the text from an information
+field in the BIOSEQ entry for a database. These information fields
+provide an easy way for the user to pass database-specific information
+to your program. One example of this is to allow the user to specify
+some command line options using an information field specific to the
+database. This way, the user can "tune" the program for each database,
+without having to always keep track of what option values must be
+specified for each database. 
+
+The SEQIO package also "defines" several information fields that it
+uses when performing database searches. These fields are `Name',
+`Format', `Alphabet', `IdPrefix' and `Index'. The `Name' field gives the
+name of the database, and its presence distinguishes BIOSEQ entries
+for databases from entries for personal collections of files. The `Format'
+and `Alphabet' fields specify the format for the database files and the
+alphabet for the database sequences, respectively. The `IdPrefix' field
+specifies the identifier prefix that should be given to the main identifier
+in each entry. The `Index' field specifies the name of the file which
+indexes all of the database's entries (see "idxseq.doc" for more
+information about the index files). 
+
+(NOTE: Information fields can only be "defined" in the sense that the
+user can be asked to place the requested text in information fields for
+the specified keywords. There is nothing requiring those fields to be
+there or restricting what text the user puts there, except maybe that
+improper text will trigger an error in the package or your program.) 
+
+The `bioseq_parse' function is the function used to parse database
+search specifications and determine the list of files that should be read
+in that search. This function (along with the `bioseq_info' function for
+the four information fields above) is used by `seqfopendb' to open a
+database search. In fact, that initial example opening a database search
+could be replaced with the following code snippet, and it would perform
+the same operations (with one exception noted below): 
+
+    int len;
+    char *s, *t, *files, *seq;
+    SEQFILE *sfp;
+
+    /*
+     * The next 9 lines replace the lines:
+     *     if ((sfp = seqfopendb("genbank")) == NULL)
+     *       exit(1);
+     */
+    if ((files = bioseq_parse("genbank")) == NULL)
+      exit(1); 
+
+    for (s=files; *s; s++) {
+      for (t=s; *s != '\n'; s++) ;
+      *s = '\0';
+
+      if ((sfp = seqfopen(t, "r", NULL)) == NULL)
+        exit(1);
+
+      while ((seq = seqfgetseq(sfp, &len, 0)) != NULL) {
+        if (len > 0 && isa_match(seq, len)) {
+          /* Found a match */
+        }
+      }
+      seqfclose(sfp);
+    }
+    free(files);
+
+The string returned by `bioseq_parse' is a list of the database's files to
+be read, where each filename is terminated by a newline character
+(including the last filename), and the whole string is terminated by a
+NULL character. This string is stored in a malloc'ed buffer, and so must
+be freed when no longer useful. (Why newline? Hey, it probably won't
+appear in a filename, it's different from '\0' and it makes printing the list
+of files look nice. Got better reasons for some other character?) 
+
+The example above opens the same set of files and reads the same
+sequences. The only potential difference between the execution of that
+example and the example using `seqfopendb' is that the SEQIO
+package will not know about the four information fields associated with
+the database, and so minor differences may appear in the results (very
+minor differences in the fields of any SEQINFO structure and any
+output generated by SEQIO). This information could be included in the
+example using `bioseq_info', `seqfsetdbname', `seqfsetidpref' and
+`seqfsetalpha', as follows: 
+
+    char *format, *dbname, *alpha, *idprefix;
+
+    if ((files = bioseq_parse("genbank")) == NULL)
+      exit(1); 
+
+    format = bioseq_info("genbank", "Format");
+    dbname = bioseq_info("genbank", "Name");
+    alpha = bioseq_info("genbank", "Alphabet");
+    idprefix = bioseq_info("genbank, "IdPrefix");
+
+    for (s=files; *s; s++) {
+      for (t=s; *s != '\n'; s++) ;
+      *s = '\0';
+
+      if ((sfp = seqfopen(t, "r", format)) == NULL)
+        exit(1);
+
+      if (dbname != NULL)
+        seqfsetdbname(sfp, dbname);
+      if (alpha != UNKNOWN)
+        seqfsetalpha(sfp, alpha);
+      if (idprefix != NULL)
+        setfsetidpref(sfp, idprefix);
+
+      while ((seq = seqfgetseq(sfp, &len, 0)) != NULL) {
+        if (len > 0 && isa_match(seq, len)) {
+          /* Found a match */
+        }
+      }
+      seqfclose(sfp);
+    }
+
+    free(files);
+    if (format != NULL)
+      free(format);
+    if (dbname != NULL)
+      free(dbname);
+    if (alpha != NULL)
+      free(alpha);
+    if (idprefix != NULL)
+      free(idprefix);
+
+Note that the format string returned by `bioseq_info' is also returned in
+a malloc'ed buffer, and so must be freed after its use. 
+
+
+
+Error Handling
+**************
+
+There are three things that any programmer must figure out when
+writing a program (apart from what the program actually is supposed to
+do). They are what the user interface will look like, how the program is
+going to store the data it uses, and how the program handles errors.
+Since this is a package and not a complete program, I leave the user
+interface to your dreams and abilities, but I want to try to simplify the
+other two tasks as much as possible. I've talked about how the SEQIO
+package keeps track of a lot of data internally, and can return that data
+when asked. Here, I want to describe how the package handles errors,
+and the way you can specify how the package should handle them. 
+
+The image I had when designing the error handling of the package was
+that when the package is being used to create a "quick and dirty"
+program that is written just to quickly get information or entries from a
+database or file, the SEQIO package should do as much as possible to
+descriptively report and properly handle errors. However, when the
+package is used to create robust application software with either a
+command line or a windowing user interface, the programmer should
+have the ability to disable some or all of that reporting/handling
+mechanism and replace it with their own error handling routines. 
+
+By default, when the SEQIO package detects an error, it first sets the
+values of variables `seqferrno' and `seqferrstr' to an integer error value
+and the text of an error message, respectively. These variables are
+defined in "seqio.h" as extern variables, so you have access to their
+values at all times. (See file "seqio.doc" for a more complete
+description of the values `seqferrno' can take.) The next thing that the
+package does is output an error message on standard error. And
+finally, depending on the seriousness of the error, the package may
+either return an error value as the result of the SEQIO function call or it
+may exit the program. 
+
+Obviously, the outputting of an error message or the program exiting
+can affect your user interface, so I've tried to design the package so
+you can either work with these actions more easily or disable them
+easily. The first thing I've done is try to write all of the error messages
+so that they would be comprehensible to the user of your program, who
+may not know about a SEQIO package. I could not handle all of the
+cases (in particular, the error message from calls to `seqfparseent' and
+`seqfannotate' are not as informative, because those functions are not
+given any information that originally came from the user, such as a
+filename). But, for the most part, the error messages should not be
+incomprehensible. If you do find an error message that you think could
+be improved, please send an message to knight@cs.ucdavis.edu. 
+
+The second thing I've done is to limit the times when the package exits
+the program only to when (1) the package detects that no more memory
+is available or when (2) it detects an bug in the package code. Thus,
+(hopefully) there will be few occasions when the package will actually
+exit the program. And, typically the "quick and dirty" programs don't
+have any better handling of these errors. 
+
+The third thing I've done is to include a function `seqfsetperror' to
+allow you to redirect all of the error printing the package does. This
+function takes another function as its argument, and, when given that
+argument function, the SEQIO package will call that function for any
+error printing, instead of calling its default print error function. Thus,
+you can redirect all of the error output to an empty function, to a
+function that changes the text of the error messages, or to a function
+which pops up an error window with the text of the message. 
+
+The fourth thing I've done is to add a function `seqferrpolicy' which
+allows you to disable some or all of the error output and whether the
+program calls exit on memory errors and program bugs. See the file "
+seqio.doc" for the details on `seqferrpolicy'. Thus, when you want to
+handle the error reporting and handling yourself, the package can be
+told to just set `seqferrno', set `seqferrstr' and return error values from
+the package functions. And, even in that case, you still have access to
+the messages that the package would have output, since that message
+is stored in `seqferrstr'. So, for example, if you are writing a windowing
+program and you want some but not all error messages to appear in a
+popup window, you can make the call "seqferrpolicy(PE_NONE)",
+and then after the SEQIO package calls which may trigger an error
+worth reporting, check the value of seqferrno. The package is
+guaranteed never to output any messages or exit the program (except if
+it core dumps, of course). 
+
+
+
+Porting the Package to Another Machine
+**************************************
+
+Currently, the package has been tested under the following operating
+systems: 
+
+ Ultrix, SunOS, Solaris, IRIX, Windows NT/95 
+
+If your machine is not one of these, there is a chance the program may
+not compile on it. Based on my experience with other software I've
+written, my guess is that the code should compile on most of the Unix
+variants, with the exception that the proper include files needed to read
+directory files may differ from those in the code. On non-Unix variants,
+the code probably will not compile, as the code dealing with directory
+files is specifically geared for the Unix and Windows operating systems.
+
+If you do have a machine not on the list, are not able to compile it and
+want to port it, first send me mail (at knight@cs.ucdavis.edu). I am very
+interesting in getting the program to work on as many systems as
+possible, and will try to help as much as possible (including
+implementing any changes on my latest version of the code and
+immediately sending you a personal release, so that you would not
+have to wait until the next version of the code came out). Then, check
+these list of things below, which may narrow down where the problem
+lies. 
+
+First, the current version of the code uses the following include files: 
+
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <ctype.h>
+  #include <fcntl.h>
+  #include <stdarg.h>
+  #include <string.h>
+  #include <time.h>
+  #include <errno.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
+
+  #ifdef __unix
+  #include <dirent.h>
+  #ifdef SYSV
+  #include <sys/dirent.h>
+  #endif
+  #endif
+
+  #ifdef WIN32
+  #include <windows.h>
+  #endif
+
+  #include "seqio.h"
+
+plus, the following include file 
+
+  #include <sys/mman.h>
+
+is ifdef'ed inside the preprocessor define value ISMAPABLE (see below
+for the discussion of the `mmap' system call and ISMAPABLE). 
+
+If your machine does not have some of these includes, take them out,
+figure out which variable/functions needed those includes, and then
+figure out which include files your system needs to declare those
+variables/functions. 
+
+Second, here is a complete list of the external variables and function
+calls used by the bulk of my program. 
+
+  * Current set of external calls in main section of code:
+  *      exit, fclose, fopen, fputc, fputc, fprintf, free, fwrite,
+  *      getenv, getpagesize, isalpha, isalnum, isdigit, isspace,
+  *      malloc, memcpy, memset, realloc, sizeof, sprintf,
+  *      strcpy, strcmp, strlen, strncmp, tolower, va_arg, va_end,
+  *      va_start, vsprintf
+  *      mmap, munmap (these are ifdef'd inside `ISMAPABLE')
+  *
+  * Current set of (unusual?) data-structures/variables in main section:
+  *      errno, va_list, __LINE__,
+  *      caddr_t (this is ifdef'd inside `ISMAPABLE')
+
+In addition, I've encapsulated a lot of the system operations into
+functions at the end of the file "seqio.c". My assumption was that the
+functions and variables above are common to most or all machines,
+whereas the functions and variables below are more machine specific.
+So, I put all of the machine specific code at the end of the file, where it
+is much easier to find. Here is a list of all of the
+functions/variables/structures made in these encapsulated functions: 
+
+  * Current set of external calls in end section of code:
+  *      close, ctime, open, read, stat, time
+  *
+  *      closedir, opendir, readdir  (these are ifdef'd inside `__unix')
+  *
+  *      GetCurrentDirectory, SetCurrentDirectory,
+  *      FindFirstFile, FindNextFile, CloseHandle
+  *                              (these are ifdef'd inside `WIN32')
+  *
+  * Current set of (unusual?) data-structures/variables in end section:
+  *      stat structure, time_t, stdin, stdout, stderr
+  *      DIR, dirent structure  (these are ifdef'd inside `__unix')
+  *      WIN32_FIND_DATA, HANDLE   (these are ifdef'd inside `WIN32')
+
+If any of these functions or variables are not supported on your
+machine, please let me know and we can figure out how to work around
+them. 
+
+Here are some additional tips and requirements for the package: 
+
+ 1. For Unix variants, if the structures DIR and dirent, and the
+   functions opendir, readdir and closedir, are problems for the
+   compiler, check the man pages of those functions for the include
+   files needed to use them. The current include files I've specified
+   are the following: 
+
+   #include <sys/types.h>
+   #include <dirent.h>
+   #ifdef SYSV
+   #include <sys/dirent.h>
+   #endif
+
+   These include files are compatible with SunOS, SOLARIS, Ultrix,
+   OSF, DYNIX (or whatever the Sequent's Unix variant is called),
+   IRIX and HPUX. I have tested the directory include files on all
+   these. 
+
+ 2. If one of the string functions (strcmp, strlen, strcpy, ...) or the
+   character class functions (isalpha, isspace, isdigit, ...) is not
+   supported, then tell me about it and I will add my own version of
+   that function to the code and remove the use of those functions
+   from the package and send you a new release. One of my goals
+   for the package is no compiler options ever need to be specified
+   to get the program to compile correctly. So, it's better (from my
+   point of view) to just replace any function that may not exist on a
+   machine, rather than have the users worry about configuring the
+   package for different machines. 
+
+ 3. The program requires that "int"'s be 4 bytes long, as they will
+   take values larger than 65536. This shouldn't be a problem,
+   except for the PC's. If you wish to port it to a PC, what I can do is
+   create an "int4" typedef that can be set to the appropriate value
+   for the different machines. 
+
+ 4. I've created typedefs to hide the datatype used when reading
+   directories and when reading from raw files using open and read.
+   If your system requires different data structures for those values,
+   the typedef declarations are at the beginning of "seqio.c". 
+
+ 5. I've also created a "dirch" variable to hold the character used by
+   the operating system to distinguish between directories in a
+   path. Now, that variable is set to the character '/' (for Unix) but it
+   can be reset using system specific ifdefs to another character
+   (such as '\' for Windows NT). This variable is also declared at the
+   beginning of "seqio.c". 
+
+   This variable is used in all of the BIOSEQ processing, which
+   must know the format of directory pathnames. If directory paths
+   use some format other than a string of names separated by the
+   directory character (as the VMS systems do), we'll have to work
+   together to reimplement the BIOSEQ processing. 
+
+Finally, if your machine is not on the list and even if you are able to
+compile the program successfully, I would like you to check one
+additional feature. Some of the Unix variants support calls to a function
+`mmap', which directly maps disk files into the memory of a program.
+I've added code to use this function, because it speeds up file reading
+by about 30-40%. I would like you to check to see if your machine
+supports the `mmap' call on generic files (some systems, like Ultrix,
+have the `mmap' call but it only works for device files). 
+
+I have encapsulated all of the code dealing with the `mmap' call inside a
+preprocessor define value ISMAPABLE, and at the beginning of
+"seqio.c", I include an ifdef expression which, for the systems that
+support the `mmap' call, defines ISMAPABLE. So, another way you can
+check to see if the `mmap' call on your system exists is to compile the
+program with the -DISMAPABLE option and see if it compiles. If so,
+please send me mail so I can add that system to the ifdef expression
+that turns on the mmap'ing. 
+
+
+James R. Knight, knight@cs.ucdavis.edu
+June 28, 1996 

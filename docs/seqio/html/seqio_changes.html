@@ -1,0 +1,432 @@
+<HTML>
+<HEAD>
+<TITLE>CHANGES  -  Changes to the SEQIO Package</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>CHANGES  -  Changes to the SEQIO Package</H1>
+
+This file lists the changes made when going from one version to the
+next.  It should be detailed enough that you won't need to go through
+the rest of the documentation to find out what's new.
+
+<P>
+<HR>
+
+<P>
+<H1>Changes from Version 1.2 to Version 1.3</H1>
+
+<H2>Minor Changes</H2>
+
+<UL>
+<LI> Added a new example program, example4.  (Version 1.2.2)
+<LI> Fixed a bug that kept seqfentry from returning the correct entry
+text when mmap'ing was used.  (Version 1.2.2)
+<LI> Added the definition of FILENAME_MAX to fmtseq and idxseq, to
+maintain compatibility with SunOS 4.1.1.  (Version 1.2.2)
+<LI> Changed genbank_annotate and pir_annotate to be a little bit more
+robust.  (Version 1.2.2)
+<LI> Removed the getpagesize system call from the package, since
+Solaris doesn't support it. (Version 1.2.1)
+<LI> Fixed an uninitialized variable bug in databank_fast_read (one
+my version of gcc didn't catch). (Version 1.2.1)
+</UL>
+
+<P>
+<H1>Changes from Version 1.1 to Version 1.2</H1>
+
+
+<H2>New Formats/Porting and Format Changes</H2>
+
+<A HREF="seqio_format.html#gcg">Added the GCG format</A>
+<P>
+<A HREF="seqio_format.html#gcg-*">Added the GCG-* format specification
+of the GCG form of GenBank, PIR, EMBL, Swiss-Prot, FASTA, NBRF and
+IG/Stanford formats.</A>
+<P>
+<A HREF="seqio_format.html#msf">Added the MSF Multiple Sequence Format</A>
+<P>
+<A HREF="seqio_format.html#blast-out">Added BLASTN/BLASTP/BLASTX
+program output format</A>
+<P>
+Added handling for NID and PID identifiers in the GenBank and EMBL
+formats (although, since neither formats' release notes explicitly
+defines a PID/PI line, no such line is output by the package).
+
+<P>
+<H2>New Programs and Program Changes</H2>
+
+<A HREF="idxseq_doc.html">Added idxseq, a database indexing program</A>
+<P>
+<A HREF="examples_doc.html">Added a number of example programs.</A>
+<P>
+<A HREF="examples_doc.html">Changed the name of keyword to grepseq.</A>
+<P>
+<A HREF="fmtseq_doc.html">Extended the fmtseq program in the following
+ways:</A>
+<UL>
+<LI> Added support for the GCG, GCG-*, MSF and BLAST output format
+<UL>
+(This support includes "no loss" conversions between the non-GCG and
+GCG forms of the GCG-* formats)
+</UL>
+<LI>
+Added a run mode capability using the `-mode' option and a
+user-created "fmtseq" BIOSEQ entry.  This gives the use the ability to
+set and unset multiple options at once.
+<LI>
+Added the `-split' option for non-GCG output, so that the user can
+produce a set of output files whose contents correspond to the input
+files given to it (i.e., so the input file contents of "gbbct.seq" get
+converted and output into a corresponding file "gbbct.fasta").
+<LI>
+Extended the `-split' option for GCG output, so that each entry is
+output in its own, individual file (whose name is the entry identifier
+string followed by the `-split' extension).
+<LI>
+Added a `-long' option, which performs the file conversions so that
+each input entry's header text appears as a comment in the converted
+entry.
+<LI>
+Added a `-skipempty' option to the Pretty-print format, so that lines
+containing only gap characters are not output (making multiple
+alignments of things like the BLAST output much easier to read).
+</UL>
+
+<P>
+<H2>New Capabilities of the SEQIO Package</H2>
+
+<A HREF="seqio_user.html#access">Added the ability for the user to
+specify single entries of a file, specifying either by entry position,
+by byte offset or by entry identifier.</A>
+<P>
+<A HREF="seqio_user.html#access">Added the ability for the user to
+specify single entries of a database, using the database identifiers
+and random access of the database entries.</A>
+<P>
+<A HREF="seqio_user.html#envvar">The BIOSEQ environment variable can
+now take a full PATH-like specification, specifying more than one
+BIOSEQ file.</A>
+<P>
+<A HREF="seqio_user.html#ifields">BIOSEQ entries can now have
+multiline information fields.</A>
+
+<P>
+<H2>Data Structure Changes</H2>
+
+<A HREF="seqio_doc.html#seqinfo">Added the fields `rawlen' and
+`fragstart' to the SEQINFO structure</A>
+<P>
+<A HREF="seqio_doc.html#seqinfo">Removed the `mainid' and `mainacc'
+fields from the SEQINFO structure and moved all identifiers into
+`idlist'.</A>
+<P>
+
+<H2>New Functions</H2>
+
+char *<A HREF="seqio_doc.html#seqfgetrawseq">seqfgetrawseq</A>(SEQFILE *sfp,
+int *length_out, int newbuffer)
+<blockquote>
+Added the `get' version of `seqfrawseq', because it's lack was annoying.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqffragstart">seqffragstart</A>(SEQFILE *sfp)
+<blockquote>
+This SEQINFO access function returns the starting position of a
+fragment sequence (if the sequence is a fragment and the starting
+position is known).
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfrawlen">seqfrawlen</A>(SEQFILE *sfp)
+<blockquote>
+The SEQINFO access function returns the length of the raw sequence.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfoneline">seqfoneline</A>(SEQINFO *info, char
+*buffer, int buflen, int idonly) 
+<blockquote>
+This function constructs a "oneline description" of a sequence, based
+on the information in the SEQINFO structure.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfputs">seqfputs</A>(SEQFILE *sfp, char *s,
+int len) 
+<blockquote>
+This function outputs a string on the output stream opened for the
+SEQFILE structure.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfgcgify">seqfgcgify</A>(SEQFILE *sfp, char
+*entry, int entrylen) 
+<blockquote>
+This function takes an entry in the non-GCG form of one of the GCG-*
+formats and outputs the GCG form of that entry.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfungcgify">seqfungcgify</A>(SEQFILE *sfp, char
+*entry, int entrylen) 
+<blockquote>
+This function takes an entry in the GCG form of one of the GCG-*
+formats and outputs the non-GCG form of that entry.
+</blockquote>
+
+char *<A HREF="seqio_doc.html#bioseq_matchinfo">bioseq_matchinfo</A>(char
+*fieldname, char *fieldvalue)
+<blockquote>
+This function finds the database whose BIOSEQ entry contains an
+information field with the given field name and field value.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfisafile">seqfisafile</A>(char *filename)
+<blockquote>
+This function tests whether the string given to it is an existing
+file, even when the string includes <A HREF="seqio_user.html#access">a
+single entry access specification</A>.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfcangcgify">seqfcangcgify</A>(char *format)
+<blockquote>
+This signals whether the given format is one of the GCG-* formats.
+</blockquote>
+
+void <A HREF="seqio_doc.html#seqfbytepos">seqfbytepos</A>(SEQFILE *sfp)
+<blockquote>
+This function returns the byte offset of the current entry in the
+current file.
+</blockquote>
+
+void <A HREF="seqio_doc.html#seqfsetperror">seqfsetperror</A>(void
+(*perr_fn)(char *)) 
+<blockquote>
+This function sets the "print error" function the package uses to
+perform all of its error printing.
+</blockquote>
+
+<P>
+<H2>Function Changes</H2>
+
+SEQFILE *<A HREF="seqio_doc.html#seqfopen">seqfopen</A>(char
+*filename, char *mode, char *format)
+<blockquote>
+Seqfopen now automatically read the first entry of the file, thus the
+format of a file is always determined when seqfopen returns.  Also, it
+now supports the single entry access to a file's entries.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqftruelen">seqftruelen</A>(SEQFILE *sfp)<BR>
+<blockquote>
+This function now always returns the "true" length of the current sequence,
+ignoring any alignment or notational characters.
+</blockquote>
+
+char *<A HREF="seqio_doc.html#seqfmainid">seqfmainid</A>(SEQFILE *sfp,
+int newbuffer)<BR>
+char *<A HREF="seqio_doc.html#seqfmainacc">seqfmainacc</A>(SEQFILE
+*sfp, int newbuffer)
+<blockquote>
+These two functions are no longer simple access functions to the
+SEQINFO structure (since their corresponding fields were removed from
+the structure).  Now, they access information from the `idlist' field
+to construct the "main" identifier and "main" accession number.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfannotate">seqfannotate</A>(SEQFILE *sfp, char
+*entry, int entrylen, char *newcomment, int flag)
+<blockquote>
+This function now takes a SEQFILE structure, instead of a stdio FILE
+structure, as the first parameters.  And, the format parameter has
+been removed, since the SEQFILE structure specifies what format the
+given entry must be.
+</blockquote>
+
+char *<A HREF="seqio_doc.html#bioseq_info">bioseq_info</A>(char *dbspec, char
+*fieldname)
+<blockquote>
+A special case has been added to this function, in that when the
+fieldname is "Root", the root directory of the datbase's BIOSEQ entry
+is now returned.  Thus, no information field with the name "Root" can
+appear in a BIOSEQ entry. (Ok, it can appear there, but there's no way
+to access the information from it.)
+</blockquote>
+
+
+<P>
+<HR>
+
+<P>
+<H1>Changes from Version 1.0 to Version 1.1</H1>
+
+
+<H2>New Formats/Porting and Format Changes</H2>
+
+<A HREF="seqio_format.html#phylip">Added PHYLIP Interleaved and
+Sequential file formats</A>
+<P>
+<A HREF="seqio_format.html#clustal">Added the Clustalw file format</A>
+<P>
+<A HREF="seqio_format.html#fasta-out">Added
+FASTA/TFASTA/SSEARCH/LFASTA/LALIGN/ALIGN program output format</A>
+<P>
+<A HREF="seqio_format.html#nbrf">Reimplemented the NBRF format, now
+that I found out where the documentation was.</A>
+<P>
+
+Ported it to Windows NT/95<BR>
+Successfully compiled it on Solaris<BR>
+Successfully compiled it using g++
+<P>
+
+
+<H2>New Programs</H2>
+
+<A HREF="fmtseq_doc.html">Added fmtseq, the file format conversion
+program</A>
+<P>
+Added keyword, a program to search for keyword/motif matches
+<P>
+
+
+<H2>Data Structure Changes</H2>
+
+<A HREF="seqio_doc.html#seqinfo">Added fields `mainid' and
+`mainacc' to the SEQINFO structure</A>
+<blockquote>
+So, now the identifiers in an entry are split up into these two fields
+plus `idlist'.  The `mainid' field gets the main identifier, the
+`mainacc' field gets the main accession number, and `idlist' gets all
+of the other identifiers.
+</blockquote>
+
+
+<H2>New Functions</H2>
+
+char *<A HREF="seqio_doc.html#seqfrawseq">seqfrawseq</A>(SEQFILE *sfp,
+int *length_out, int newbuffer)
+<blockquote>
+Returns the "raw" sequence given in the entry, which includes any
+alignment or structural notation characters in addition to the
+sequence itself.
+
+Typically, `seqfsequence' extracts only the alphabetic characters,
+whereas `seqfrawseq' extracts all characters except whitespace and
+digits.  See "format.doc" for the full details.
+</blockquote>
+
+char *<A HREF="seqio_doc.html#seqfmainid">seqfmainid</A>(SEQFILE *sfp,
+int newbuffer)<BR>
+char *<A HREF="seqio_doc.html#seqfmainacc">seqfmainacc</A>(SEQFILE
+*sfp, int newbuffer)
+<blockquote>
+Access functions for the new information fields `mainid' and
+`mainacc'.
+</blockquote>
+
+void <A HREF="seqio_doc.html#seqfsetidpref">seqfsetidpref</A>(SEQFILE
+*sfp, char *idprefix)<BR>
+void <A HREF="seqio_doc.html#seqfsetdbname">seqfsetdbname</A>(SEQFILE
+*sfp, char *dbname)<BR>
+void <A HREF="seqio_doc.html#seqfsetalpha">seqfsetalpha</A>(SEQFILE
+*sfp, char *alphabet)
+<blockquote>
+Sets the identifier prefix, database name and sequence alphabet for
+the sequences read in using the given SEQFILE structure.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfisaformat">seqfisaformat</A>(char *format)
+<blockquote>
+Tests a format string to see if it's a support file format.
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqffmttype">seqffmttype</A>(char *format)
+<blockquote>
+Return a type information value about the given format (see
+"<A HREF="seqio_format.html#types">format.doc</A>" for the details
+about the format types).
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfcanwrite">seqfcanwrite</A>(char *format)
+<blockquote>
+Can the package output entries in that format?
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfcanannotate">seqfcanannotate</A>(char *format)
+<blockquote>
+Can the package annotate entries in that format?
+</blockquote>
+
+int <A HREF="seqio_doc.html#bioseq_check">bioseq_check</A>(char *dbspec)
+<blockquote>
+Does the database search specification refer to a known database?  Is
+there a BIOSEQ entry for it?
+</blockquote>
+
+int <A HREF="seqio_doc.html#seqfsetpretty">seqfsetpretty</A>(SEQFILE
+*sfp, int value) 
+<blockquote>
+When outputting entries in the Plain, FASTA, NBRF or IG/Stanford
+formats, this specifies whether to add spaces to make the sequence
+look prettier or not.
+
+<P>
+By default, the output operations look at the sequence being output,
+and only add spaces when the sequence is DNA, RNA or Protein and when
+there are no non-alphabetic characters in the sequence.
+</blockquote>
+
+<H2>Minor Changes</H2>
+
+<UL>
+<LI> Removed "#include &lt;unistd.h&gt;" since it was not needed
+<LI> Fixed a bug in the bioseq_parse directory reading code
+(it now skips entries "." and "..")
+<LI> Replaced "strerror(errno)" with "sys_errlist[errno]"
+<LI> Replaced S_ISREG and S_ISDIR with their macro exansions
+<LI> Changed the error macros so that the return argument is
+the complete return command, instead of just the return value
+<LI> Made my own versions of toupper, strcasecmp, strncasecmp
+<LI> Changed the `fasta_read' and `fasta_getinfo' functions so that
+any lines beginning with ';' that occur before any of the sequence are
+considered as part of the entry header and are added to the comment
+lines when filling in the SEQINFO fields.
+<LI> Changed `seqfsetidpref' and `add_id' to convert all identifier
+prefixes to lowercase.
+<LI> Made some minor changes to the FASTA, NBRF and IG/Stanford
+putseq functions, rearranging where the main identifier and main
+accession number are placed in an outputted entry.
+<LI> Added a stripflag argument to parse_comment and add_comment so
+that spaces won't be stripped from comments in some formats.
+<LI> Added prototypes to all of the functions declared just before
+the file_table.
+<LI> Added `extern "C" {' and '}' ifdef'ed inside `__cplusplus' at
+the beginning and end of "seqio.h".
+<LI> Created typedefs for the two enum's in the INTSEQFILE structure,
+to be compatible with g++ compilation.
+<LI> Added explicit conversions for all assignments involving void * 
+variables.
+<LI> In seqfopendb, the format and idprefix information field values
+are now tested to see if they contain valid values.
+<LI> Fixed a bug in fasta_read, nbrf_read and stanford_read which
+allowed the current file pointer to move past the end of the read file
+buffer (which causes a seg fault when mmap buffers are being used).
+<LI> The access functions for the SEQINFO fields have been collapsed
+into a bunch of stub functions and intseq_field[123].
+<LI> Added format specific variables to the INTSEQFILE structure,
+which are used by the NBRF, PHYLIP, Clustalw and FASTA-output formats.
+<LI> Fixed GenBank, PIR, EMBL, Swiss-Prot and NBRF output functions so
+that accession number lists don't overflow past the line length.
+</UL>
+
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+July 9, 1996
+</ADDRESS>
+</BODY>

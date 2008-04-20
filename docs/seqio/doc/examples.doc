@@ -1,0 +1,203 @@
+SEQIO -- A Package for Sequence File I/O 
+
+
+examples - Example Programs using the
+*************************************
+SEQIO Package
+*************
+
+
+
+Usage
+=====
+
+   example1  keyword  file
+
+   example2  files...
+
+   example3  files...
+
+   example4 [options] files...
+      -a string    -  Match an author's last name
+      -d string    -  Match a substring of definition
+      -e string    -  Match a substring in the entry
+      -g string    -  Match an element of geneaology
+      -j string    -  Match an journal name
+      -k string    -  Match a keyword
+      -o string    -  Match the formal organism name
+      -r string    -  Match a substring of reference title
+
+   typeseq  files...
+
+   wcseq  files...
+
+   grepseq  [-# | -a | -d | -l | -m | -o file | -p]  pattern  files...
+
+Descriptions (except for grepseq)
+=================================
+
+These are simple programs (except maybe for grepseq) that show the
+various techniques for using the SEQIO package. The `example1'
+program is a simple version of the grepseq program which takes a
+keyword string and a single file/database specifier and searches the
+input sequences for any exact match to the keyword string. The entry of
+any matching sequence is output. 
+
+The `example2' program is a sequence information display program. It
+displays all of the information the SEQIO package can automatically
+extract from each input entry. 
+
+The `example3' program shows how to extract information from the
+EMBL feature tables using the SEQIO package. Specifically, the
+program outputs the "note" subfield of every "CDS_pept" feature of the
+EMBL files given to it as input. Since the example was not meant as a
+general feature extraction program (although it should show you how
+to create one if you want), the feature name, subfield, and file format
+were not generalized but hard-coded into the program. 
+
+The `example4' program is an entry filtering program for GenBank
+formatted entries. Essentially, a primitive form of the type of filtering
+done by SRS. In addition to the files/databases (which must be in
+GenBank format), options can be given to tell the program only to
+output entries containing the appropriate information (see the option
+list above and the program comments for the specifics about that
+information). The program will output all input entries whose
+information matches all of the specified options (i.e., AND'ing all of the
+option filters). The matching for the individual options is
+case-insensitive. 
+
+The program `typeseq' is essentially a combination of a `cat' program
+for sequences and a simple `fetch' program (like GCG's FETCH). All the
+program actually does is output its input entries. But, because the
+SEQIO package has the capability to access single entries of files and
+databases, the "fetch" capability is automatically included in this
+simple program. 
+
+The program `wcseq' counts the number of sequences, number of
+entries, and total size of the sequences in the input (like `wc' counts
+lines, words and characters). The code to this program shows how a
+programmer can more closely control how files and databases are read,
+instead of leaving all of the database translation and reading to the
+SEQIO package. 
+
+As I said, these programs were written mostly to show programmers
+how to use the SEQIO package, but the typeseq, wcseq and the
+grepseq program described below may also be useful utility programs. 
+
+Description of grepseq
+======================
+
+The `grepseq' program takes a keyword which can contain ambiguous
+characters and character classes (also called a fixed-width motif) and
+then searches files and databases for exact or approximate matches to
+that keyword. The program produces one of two kinds of output, either
+a list of the matching sequences with the places where the keyword
+matched, or the complete entries of sequences containing matches,
+where each entry is annotated with the places where the matches
+occur. 
+
+Program Options
+===============
+
+The command line should consist of the keyword, one or more
+files/databases, and any program options. The first command line
+argument which does not begin with a '-' is taken as the keyword, and
+the rest not beginning with '-' are the files/databases. The program
+options should be specified individually on the command line. So, "-d
+-l -3" is valid, whereas "-dl3" is not. 
+
+The program options:
+  -#  -  The number of errors to allow.
+  -a  -  Ambiguous characters of the text should used in the matching.
+  -d  -  The text will be DNA or RNA.
+  -l  -  Only list the sequences that match.  Don't output their entries.
+  -m  -  Only allow mismatch errors.  No indels.
+  -o filename - The output file.
+  -p  -  The text will be Protein.
+
+Examples:
+   grepseq ACGYNNCGT mydna1 mydna2 mydna3
+   grepseq -2 -m -l TDSSYDKER swissprot
+   grepseq -a -1 [LIVY]G[LIVMFYAG][DK]S[LIVMT]...[DET]....[LIVMF] pir
+
+The keyword format uses the same syntax as the grep family of
+programs, except that it only allows character classes of the form "[...]"
+and "[^...]" (where the '^' at the beginning of the class specifies that the
+character class is the complement of the given characters). Like the
+grep family, a period '.' always matches anything, and the backslash
+character is used to specify periods, brackets and backslashes in the
+keyword. 
+
+(NOTE: Only keywords whose width is 31 or smaller can be handled by
+the program. The string itself can be longer since it can contain
+character classes specifying the characters for one position, but the
+number of positions specified by the keyword cannot be longer than
+31.) 
+
+For the input files/databases, if a command line argument specifies an
+existing file, then that file is taken as input. Otherwise, the argument is
+treated as a database search specification. In order for databases to be
+searched, a BIOSEQ file must be created to describe all of your
+databases, and the environment variable "BIOSEQ" must be set to that
+file. Then, a database search is specified by giving (1) the name of the
+database to search the whole database, as in "genbank" or
+"swiss-prot", (2) the database name, a colon and then a list of files and
+aliases to search a part of the database, as in "pir:pir1.dat,pir2.dat" or
+"genbank:phg,inv", or (3) a database name followed by a `suffix alias',
+as in "pir1" or "gbphg" which searches the files defined by the suffix
+alias. See file "user.doc" for complete information on creating BIOSEQ
+files and specifying database searches. 
+
+Program Execution
+=================
+
+The program preprocesses the keyword under all three alphabets,
+DNA/RNA, Protein and ASCII. For DNA/RNA and Protein, the standard
+IUPAC alphabet characters are used in the preprocessing under those
+alphabets. Then, for each input sequence, once the alphabet has been
+determined, the correspondingly processed keyword is used for the
+matching. If no alphabet is specified by the program options, by the
+BIOSEQ entry or by the sequence entry, the alphabet is guessed at. It
+is assumed to be DNA/RNA if all of the characters are in the alphabet
+and at least 85% of them are A, C, G or T/U. Else, if all the characters
+are Protein characters, the alphabet is assumed to be Protein.
+Otherwise, the alphabet is assumed to be ASCII. 
+
+The program then searches each input sequence to find substrings
+that match the keyword either exactly, by default, or within the specified
+number of mismatches, insertions and deletions (or just mismatches if
+`-m' is specified). By default, the program will ignore any ambiguous
+characters in the input sequences. This avoids the problem of any
+keyword always matching a string of N's in DNA/RNA or X's in Protein.
+If the `-a' option is specified, then those ambiguous characters will be
+included in the matching, and ambiguous characters are considered a
+match if the intersection of the character classes they represent is
+non-empty. 
+
+If the `-l' option is specified, the output will consists of a list of
+one-line descriptions of each matching sequence, along with the
+places in the sequence where the matches occur. The first 6
+non-overlapping matches will be reported for each such sequence (the
+best scoring match of any overlapping matches is reported). If `-l' is
+not specified, then the entries of matching sequences are output,
+where the comment section of each entry is annotated with a
+description of where the matches occurred in that sequence. 
+
+When complete entries are being output, the format for all output is the
+format of the first input file. So, if the input contains files/databases with
+different formats, some of the entries may be converted to the format of
+the first input file/database in order for the output to be a single file
+format. 
+
+(NOTE: When insertions and deletions are allowed, the reported left
+endpoint of a match will not necessarily be the actual left endpoint of
+the match. The reported left endpoint is always computed by
+subtracting the keyword size from the right endpoint and adding 1. The
+algorithm which performs the matching cannot keep track of the left
+endpoints without a significant decrease in running time. The reported
+right endpoint, however, will always be the actual right endpoint of the
+match.) 
+
+
+James R. Knight, knight@cs.ucdavis.edu
+June 30, 1996 

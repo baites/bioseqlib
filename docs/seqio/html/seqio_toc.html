@@ -1,0 +1,212 @@
+<HTML>
+<HEAD>
+<TITLE>TOC  -  Table of Contents for the SEQIO Package Documentation</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>Table of Contents for the SEQIO Package Documentation</H1>
+
+<HR>
+
+<P>
+<H1>Contents of the User's Section</H1>
+
+<UL>
+<LI> <A HREF="seqio.html"><B>A Description of the SEQIO Package</B></A>
+<P>
+<LI> <A HREF="fmtseq_doc.html"><B>fmtseq - A File Conversion Program</B></A>
+<OL>
+<LI> <A HREF="fmtseq_doc.html#readseq_diff">Differences from readseq</A>
+<LI> <A HREF="fmtseq_doc.html#interactive">Interactive Mode</A>
+<LI> <A HREF="fmtseq_doc.html#options">Program Options</A>
+<LI> <A HREF="fmtseq_doc.html#use">Option Format and Use</A>
+<LI> <A HREF="fmtseq_doc.html#input">Program Input and File Formats</A>
+<LI> <A HREF="fmtseq_doc.html#select">Sequence Selection and
+Transformation</A>
+<LI> <A HREF="bigaln_example.html">A "Big Alignment" Example</A>
+</OL>
+<P>
+<LI> <A HREF="idxseq_doc.html"><B>idxseq - A Database Indexing Program</B></A>
+<OL>
+<LI> <A HREF="idxseq_doc.html#options">Program Options</A>
+<LI> <A HREF="idxseq_doc.html#operation">Program Operation</A>
+<LI> <A HREF="idxseq_doc.html#format">Index File Format</A>
+</OL>
+<P>
+<LI> <A HREF="examples_doc.html"><B>Example Programs</B></A>
+<OL>
+<LI> <A HREF="examples_doc.html">example1 - A simple keyword searching
+program</A> 
+<LI> <A HREF="examples_doc.html">example2 - A sequence information
+display program</A> 
+<LI> <A HREF="examples_doc.html">example3 - A feature extraction
+program</A> 
+<LI> <A HREF="examples_doc.html">typeseq - A sequence output (`cat' or
+`fetch') program</A> 
+<LI> <A HREF="examples_doc.html">wcseq - A sequence/entry counting program</A>
+<LI> <A HREF="examples_doc.html">grepseq - A fixed-width motif
+searching program</A> 
+</OL>
+<P>
+<LI> <A HREF="seqio_user.html"><B>User's Guide to Programs Using the
+SEQIO Package</B></A> 
+<OL>
+<LI> <A HREF="seqio_user.html#access">Specifying Files and Databases
+to a Program</A> 
+<LI> <A HREF="seqio_user.html#formats">The Supported File Formats</A>
+<LI> <A HREF="seqio_user.html#idents">Database Identifiers and
+Identifier Prefixes</A> 
+<LI> <A HREF="seqio_user.html#one-line">One-line Sequence
+Descriptions</A>
+</OL>
+<P>
+<LI> <A HREF="seqio_user.html#bioseq"><B>The BIOSEQ Standard for
+Describing Databases</B></A>
+<OL>
+<LI> <A HREF="seqio_user.html#simple">Simple BIOSEQ Files</A>
+<LI> <A HREF="seqio_user.html#envvar">The BIOSEQ Environment Variable</A>
+<LI> <A HREF="seqio_user.html#extending">Extending the Simple Format</A>
+<OL>
+<LI> <A HREF="seqio_user.html#altnames"><I>Alternate Database Names</I></A>
+<LI> <A HREF="seqio_user.html#rootdir"><I>A Root Directory for the Database Files</I></A>
+<LI> <A HREF="seqio_user.html#comments"><I>Adding Comments to the BIOSEQ File</I></A>
+<LI> <A HREF="seqio_user.html#ifields"><I>Information Fields Giving Information about
+the Database</I></A>
+<LI> <A HREF="seqio_user.html#virtual"><I>Virtual BIOSEQ Entries</I></A>
+<LI> <A HREF="seqio_user.html#sub-dir"><I>A Shorthand for Listing a Sub-Directory's Files</I></A>
+<LI> <A HREF="seqio_user.html#wildcards"><I>Wildcards in the Filenames</I></A>
+<LI> <A HREF="seqio_user.html#aliases"><I>Aliases</I></A>
+</OL>
+<LI> <A HREF="seqio_user.html#dbsearch">Database Search Specifiers</A>
+<OL>
+<LI> <A HREF="seqio_user.html#spec_format"><I>Search Specifier Format</I></A>
+<LI> <A HREF="seqio_user.html#matching"><I>Specifier-Filename Matching Process</I></A>
+</OL>
+<LI> <A HREF="seqio_bioseq.html">A Complete BIOSEQ File Example</A>
+</OL>
+</UL>
+
+<P>
+<HR>
+
+<P>
+<H1>Contents of the Programmer's Section</H1>
+
+<UL>
+<LI> <A HREF="seqio_doc.html"><B>The SEQIO Package Interface</B></A>
+<OL> 
+<LI> <A HREF="seqio_doc.html#opening">Opening and Closing Files/Database-Searches</A>
+<LI> <A HREF="seqio_doc.html#reading">Reading Sequences/Entries</A> 
+<LI> <A HREF="seqio_doc.html#seqinfo">The SEQINFO Structure</A>
+<LI> <A HREF="seqio_doc.html#fieldfns">SEQINFO Field Access Functions</A>
+<LI> <A HREF="seqio_doc.html#writing">Writing Sequences/Entries</A>
+<LI> <A HREF="seqio_doc.html#bioseq">BIOSEQ Database Functions</A>
+<LI> <A HREF="seqio_doc.html#misc">Miscellaneous Functions</A>
+<LI> <A HREF="seqio_doc.html#errors">Error Handling/Reporting</A>
+</OL>
+<P>
+<LI> <A HREF="seqio_qref.html"><B>Quick Reference Guide to the SEQIO
+Interface</B></A>
+<OL>
+<LI><A HREF="seqio_qref.html#defined">Functions, Structures, Variables and Constants
+Defined by the Package</A>
+<LI> <A HREF="seqio_qref.html#opening">Opening and Closing Files/Database-Searches</A>
+<LI> <A HREF="seqio_qref.html#reading">Reading Sequences/Entries</A> 
+<LI> <A HREF="seqio_qref.html#seqinfo">The SEQINFO Structure</A>
+<LI> <A HREF="seqio_qref.html#writing">Writing Sequences/Entries</A>
+<LI> <A HREF="seqio_qref.html#bioseq">BIOSEQ Database Functions</A>
+<LI> <A HREF="seqio_qref.html#misc">Miscellaneous Functions</A>
+<LI> <A HREF="seqio_qref.html#errors">Error Handling/Reporting</A>
+</OL>
+<P>
+<LI> <A HREF="seqio_progr.html"><B>Programmer's Guide to Using the SEQIO Package</B></A>
+<OL>
+<LI> <A HREF="seqio_progr.html#reading">Reading Sequences and Performing Database
+Searches</A>
+<OL>
+<LI> <A HREF="seqio_progr.html#stdio_diff">Differences between SEQIO and stdio</A>
+</OL>
+<LI> <A HREF="seqio_progr.html#extracting">Extracting Information from Entries</A>
+<OL>
+<LI> <A HREF="seqio_progr.html#rawseq">The Raw Sequence</A>
+<LI> <A HREF="seqio_progr.html#seqinfo">The SEQINFO Structure</A>
+<LI> <A HREF="seqio_progr.html#otherinfofns">Seqfmainid, Seqfmainacc, Seqfoneline and Seqfallinfo</A>
+<LI> <A HREF="seqio_progr.html#otherinfo">Extracting Other Information</A>
+</OL>
+<LI> <A HREF="seqio_progr.html#writing">Writing, Creating and Annotating Entries</A>
+<OL>
+<LI> <A HREF="seqio_progr.html#write">Writing Entries</A>
+<LI> <A HREF="seqio_progr.html#create">Creating New Entries</A>
+<LI> <A HREF="seqio_progr.html#annotate">Annotating Existing Entries</A>
+</OL>
+<LI> <A HREF="seqio_progr.html#bioseq">BIOSEQ Stuff (Database Information Processing)</A>
+<LI> <A HREF="seqio_progr.html#errors">Error Handling</A>
+<LI> <A HREF="seqio_progr.html#porting">Porting the Package to Another Machine</A>
+</OL>
+<P>
+<LI> <A HREF="seqio_format.html"><B>The Supported File Formats (in
+detail)</B></A>
+<OL>
+<LI> <A HREF="seqio_format.html#formats>The List of Formats</A>
+<LI> <A HREF="seqio_format.html#types">File Format Types</A>
+<LI> <A HREF="seqio_format.html#autodetermine">Automatically Determining the Format Type</A>
+<LI> <A HREF="seqio_format.html#details">The SEQIO File Format Implementations</A>
+<OL>
+<LI> <A HREF="seqio_format.html#raw">Raw Format</A>
+<LI> <A HREF="seqio_format.html#plain">Plain Format</A>
+<LI> <A HREF="seqio_format.html#genbank">GenBank Flat-File Format</A>
+<LI> <A HREF="seqio_format.html#gbfast">GBFAST variation of GenBank</A>
+<LI> <A HREF="seqio_format.html#pir">PIR/CODATA Format</A>
+<LI> <A HREF="seqio_format.html#pirfast">PIRFAST Variation of PIR</A>
+<LI> <A HREF="seqio_format.html#embl">EMBL/Swiss-Prot File Formats</A>
+<LI> <A HREF="seqio_format.html#emblfast">EMBLFAST/SPFAST Variation of EMBL/Swiss-Prot</A>
+<LI> <A HREF="seqio_format.html#fasta">FASTA/FASTA-old File Formats</A>
+<LI> <A HREF="seqio_format.html#nbrf">NBRF/NBRF-old File Formats</A>
+<LI> <A HREF="seqio_format.html#ig">IG/Stanford, IG-old/Stanford-old File Formats</A>
+<LI> <A HREF="seqio_format.html#asn">ASN.1 Text File Format</A>
+<LI> <A HREF="seqio_format.html#gcg">GCG Format</A>
+<LI> <A HREF="seqio_format.html#gcg-*">GCG-* Formats</A>
+<LI> <A HREF="seqio_format.html#msf">MSF Multiple Sequence Format</A>
+<LI> <A HREF="seqio_format.html#phylip">PHYLIP Interleaved and Sequential File Formats</A>
+<LI> <A HREF="seqio_format.html#clustal">Clustalw Format</A>
+<LI> <A HREF="seqio_format.html#fasta-out">FASTA-output Formats</A>
+<LI> <A HREF="seqio_format.html#blast-out">BLAST-output Formats</A>
+</OL>
+</OL>
+</UL>
+
+<P>
+<HR>
+
+<P>
+<H1>Other Information</H1>
+
+<UL>
+<LI> <A HREF="seqio_readme.html"><B>The Package README File</B></A>
+<OL> 
+<LI> <A HREF="seqio_readme.html">List of Files in the Release</A>
+<LI> <A HREF="seqio_readme.html#install">Installation Notes</A>
+<LI> <A HREF="seqio_readme.html#package_use">Using the SEQIO Package in a Program</A>
+<LI> <A HREF="seqio_readme.html#author">Author and Acknowledgements</A>
+<LI> <A HREF="seqio_readme.html#copyright">COPYRIGHT NOTICE</A>
+</OL>
+<LI> <A HREF="seqio_changes.html"><B>The Package CHANGES File</B></A>
+<LI> <A HREF="seqio_todo.html"><B>The Package TODO File</B></A>
+</UL>
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 29, 1996
+</ADDRESS>
+</BODY>
+

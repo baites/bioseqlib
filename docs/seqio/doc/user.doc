@@ -1,0 +1,1255 @@
+SEQIO -- A Package for Sequence File I/O 
+
+
+USER.DOC - SEQIO Information for the End User
+*********************************************
+
+
+
+This file contains information that the user should read when using any
+program you create from the SEQIO package. It consists of sections
+that should be included in your program's user guide. 
+
+Please feel free to copy and/or edit this info into your documentation
+(as long as you acknowledge that your program uses the SEQIO
+package, any and all documentation that accompanies the package can
+be included in your documentation). 
+
+Jim 
+
+
+
+Specifying Files and Databases
+******************************
+
+This program provides a number of different ways of specifying either
+all or a part of a file or all or part of a database. The different methods
+are the following (with explanations given below): 
+
+ 1. Give just the filename to specify all entries in the file, like
+   "myseqs". 
+ 2. Specifying just the i'th entry of a file, like "myseqs@3" for the
+   third entry. 
+ 3. Specifying the entry with a specific identifier, like 
+   "myseqs@gb:humhba1" to get the entry whose GenBank Locus is
+   "humhba1". 
+ 4. Specifying the entry beginning at some byte offset, like 
+   "myseqs@#37842". 
+ 5. Any combination of 2, 3 and 4, like "myseqs@6,al3csa,1". 
+
+ 6. Give just the name of a database to specify all entries in the
+   database, like "pir" or "genbank". 
+ 7. Give a database name and a suffix alias to specify part of a
+   database, like "pir1" or "gbest". 
+ 8. Give a database name, a colon and an alias, like "genbank:est"
+   or "NRFES:exo" 
+ 9. Give a database name, a colon and a filename or pathname, like
+   "pir:pir1.dat", or "NRFES:all_v05/bcta". 
+ 10. Give an identifier prefix, a colon and an identifier, like
+   "pir:pq0277" or "nid:g183790". 
+ 11. Give 9 or 10 using the wildcards `?' or `*', like "pir:pir?.dat"
+   or "gb:humhb*" 
+ 12. Give any combination of 8, 9, 10 and 11, like
+   "gb:est,humhb*,gbuna.seq" 
+
+Specifying Files
+================
+
+There are two ways to specify the entries of a file, either give the
+filename to specify all of the entries in the file, or give the filename
+followed by a single entry access specification to specify only some of
+the file's entries. This section focuses on the single entry access
+specification (since my guess is that you know how to specify a
+filename). 
+
+The single entry access specification is placed at the end of a filename,
+using an ampersand `@', and is a comma separated list of elements.
+Any ampersand appearing in a filename given to the program will be
+treated as marking the beginning of a single entry access specification
+(so, don't create any files using ampersands). 
+
+There are three types of elements. The first consists only of a number,
+and it specifies that number's entry in the file, i.e., the specification
+"@3" specifies the third entry. The second type specifies the entry's
+byte offset in the file and is a number preceeded by a hatch `#', such as
+"@#37842". Typically, this form is only used by the program itself in
+order to translate a database identifier into its entry's location in the
+database files. The third type consists of an identifier that may or may
+not be preceeded by an identifier prefix, such as "@al3csa" or
+"@gb:humhba1". If the identifier prefix is not present, then any
+identifier for the entry (or one of the sequences in a multiple sequence
+alignment entry) that matches the element specifies the entry to
+access. 
+
+In all three cases, only a single entry is specified by each element in the
+list. If more than one entry matches the identifier, then only the first
+matching entry is accessed. Also, these access specifications specify
+entries, and not sequences. Thus, with a multiple sequence alignment
+file format and an identifier element like "phylip_align@al3csa", the
+access will retrieve the complete entry which contains a sequence
+whose identifier is "al3csa". It will NOT extract just that particular
+sequence from the multiple alignment entry. 
+
+Specifying Databases
+====================
+
+There are two overall ways of specifying which entries of a database to
+access, specifying by file/alias and specifying by identifier. However,
+since both of those ways use essentially the same syntax, things have
+the potential to become confusing. But, by remembering the general
+rule that the file/alias specification is always tried first and only if that
+fails is the identifier specification tried, deciding how to specify the
+files/entries of the database you want should be very intuitive. 
+(Note: One consequence of this rule is that none of the database files
+should have the same name as a database identifier, unless of course
+they both refer to the same thing. All of the distributed databases have
+this feature, and so if you create a database of your own, remember to
+keep this in mind.) 
+
+The complete details for how a database search specifier is parsed and
+translated into entries of the database is better left for the section on 
+the BIOSEQ standard for describing databases given at the end of this
+file. We'll only cover the general idea here. 
+
+The simpler form of a database specifier is one that does not contain a
+colon `:'. In this simpler form, the specifier can only specify either a
+complete database or a suffix alias (which is a database name
+immediately followed by a suffix describing a part of the database, like
+"pir1" for the first section of the PIR database or "gbest" for the EST
+section of GenBank). The suffix aliases that can be used with a
+database name depend on the contents of the BIOSEQ entry for that
+database. See the BIOSEQ standard for the description of what suffix
+aliases look like in a BIOSEQ entry. 
+
+The other form of a database specifier is where the specifier begins with
+either a database name or an identifier prefix, contains a `:', and then
+contains a comma separated list of files, aliases and database
+identifiers. With this type of database specifier, the database names
+and identifier prefixes are treated as essentially synonymous, and you
+can use either one interchangeably, governed by the following search
+rules: 
+
+ 1. If the dbname/idprefix string matches the name of one of the
+   BIOSEQ entries, then the string is considered to be a database
+   name and the BIOSEQ entries whose name matches the string
+   describe that database. (Note: There can be more than one
+   BIOSEQ entry for a database, each containing different
+   information about the database.) 
+
+ 2. If the dbname/idprefix string has the form of a proper identifier
+   prefix and it matches one of the canonical identifier prefixes (see 
+   below for this list of idprefixes), then it is considered an identifier
+   prefix, and the corresponding database name in the list of
+   idprefixes is used in the search of the BIOSEQ entries. 
+
+ 3. If the dbname/idprefix string has the form of a proper identifier
+   prefix but doesn't match the list of idprefixes, then the BIOSEQ
+   entries are searched for an entry containing an information field
+   with the fieldname of "IdPrefix" and a field value matching the
+   string. (This field specifies the identifier prefix for a database.) If
+   found, the name of that BIOSEQ entry is used as the database
+   name. Otherwise, an error occurs. 
+
+The third rule is included so that you can create your own database
+(whose identifiers get a unique prefix to distinguish them from all other
+identifiers) and specify entries using a new identifier prefix without
+recompiling any code (since the canonical list is compiled into the
+SEQIO package). 
+
+Once the database name is determined, the BIOSEQ entries are
+searched for two pieces of information, a BIOSEQ entry that describes
+the files and aliases for the database and a BIOSEQ entry that gives an
+index file for the database. An index file is a file created by the idxseq
+program and specifies the location of every entry in the database. The
+"Index" information field of a BIOSEQ entry names the index file for the
+entry's database. 
+
+After this search, each element of the comma separated list of files,
+aliases and identifiers (remember them?) is searched first against the
+list of files and aliases (if such a BIOSEQ entry was found) and then
+against the index file (if there is an index file). Whatever matches each
+element is treated as the result of the database search specifier. For
+more on how this matching occurs (since the filenames and identifiers
+may contain wildcard characters), see the section at the end of this file
+on Database Search Specifiers. 
+
+
+
+File Formats
+************
+
+This program supports a number of different file formats. The basic file
+formats are the following (with alternative names given in parentheses):
+
+ o Raw 
+ o Plain 
+ o GenBank (gb) 
+ o EMBL 
+ o Swiss-Prot (swissprot, sprot) 
+ o PIR (CODATA) 
+ o NBRF 
+ o FASTA (Pearson) 
+ o IG/Stanford (IG, Stanford) 
+ o ASN.1 (ASN) 
+ o GCG 
+ o GCG-* (GCG-GenBank, GCG-PIR, GCG-EMBL, ...) 
+ o MSF 
+ o PHYLIP 
+ o PHYLIP-Seq (phylip-s, phylips) 
+ o PHYLIP-Int (phylip-i, phylipi) 
+ o Clustalw (clustal) 
+ o FASTA-output (fasta-out, fastaout, fout) 
+ o BLAST-output (blast-out, blastout, bout) 
+
+where `FASTA-output' and `BLAST-output' specify the output
+produced by the programs in the FASTA and BLAST packages. 
+
+The most unusual file "format" listed above is the `GCG-*' format. This
+actually refers to a set of formats specifying the GCG forms of the
+GenBank, EMBL, Swiss-Prot, PIR, NBRF, FASTA and IG/Stanford
+formats. In implementing the basic GCG format, the program includes
+special consideration for these formats, because the GCG format can
+include the complete header for entries in these formats. Thus, entries
+in the GenBank and GCG-GenBank formats (say) contain the same
+header lines, and differ only in how the sequence lines are formatted. 
+
+For that reason, the program closely relates the non-GCG and GCG
+forms of those seven file formats, and, more importantly, distinguishes
+those seven GCG formats from the generic GCG format (where the
+header lines of an entry are just treated as unstructured comments).
+The list above uses `GCG-*' because all of the alternative names can
+replace the `*' in a valid format name (like "GCG-GB", "GCG-pearson"
+or "GCG-igold", the last of which is described below). 
+
+In addition to these formats, there are also some other file "formats"
+that are actually variations of these formats but were created either to
+improve the program's running time or to support different versions of
+the file formats. These variations are described just after the short
+descriptions of the file formats above. 
+
+A file's or database's format will always be specified using these
+strings (or the strings below). There are no "format id numbers" for the
+various formats. Also, when naming a format, it can be given using any
+combination of uppercase and lowercase characters. The matching of
+format names is case-insensitive. 
+
+When the program executes and attempts to read a file of sequences or
+a database, the format of the file either is assumed to be in the specified
+format or is determined automatically if no format is specified. This
+automatic determination of a file's format should work with any
+properly formatted file in the formats above, with the exception of the
+Raw format. If the automatic determination cannot figure out the format
+of a file, the `Plain' format is used and a warning message may be
+output. 
+
+Format Descriptions
+===================
+
+To avoid any confusion about what these file formats are, here are
+short descriptions of each format. For more complete descriptions how
+the program parses these formats, see file format.doc. 
+
+Raw 
+   In the Raw format, the characters of the file are the characters of
+   the sequence. 
+Plain 
+   In the Plain format, all of the alphabetic characters of the file are
+   the characters of the sequence. Any spaces or non-alphabetic
+   characters are ignored. 
+GenBank 
+   A GenBank entry begins with a "LOCUS" line, contains a header
+   region that could contain "DEFINITION", "ACCESSION",
+   "FEATURES" and other lines, has an "ORIGIN" line that marks
+   the beginning of the sequence, has one or more lines of
+   sequence and ends with a "//" line. 
+PIR 
+   A PIR entry begins with an "ENTRY" line, contains a header
+   region that could contain "TITLE", "ACCESSIONS",
+   "SUMMARY" and other lines, has a "SEQUENCE" line that
+   marks the beginning of the sequence, has one or more lines of
+   sequence and ends with a "///" line. 
+EMBL 
+   An EMBL entry begins with an "ID" line, contains a header
+   region that could contain "DE", "AC", "FT" and other lines, may
+   or may not contain sequence lines (all of which begin with 5
+   spaces), and ends with a "//" line. 
+Swiss-Prot 
+   A Swiss-Prot entry is very similar to an EMBL entry, differing
+   only in a couple minor details such as a different structure for
+   the "ID" line, no "XX" lines, and so on. 
+FASTA 
+   A FASTA entry begins with a line that starts with '>' and contains
+   a one-line description of the sequence, can contain other
+   comment lines beginning with '>', and then contains one or more
+   sequence lines not beginning with '>'. 
+NBRF 
+   An NBRF entry begins with a line that starts with '>', has a two
+   character sequence information code, has a ';' as the fourth
+   character on that first line, and then follows the ';' with an
+   identifier. The next line contains a one-line description of the
+   sequence (and does not begin with a '>'). The sequence appears
+   after that, and is terminated by a '*'. Finally, some header lines
+   like "C;Accession:", "C;Date:", "C;Comment:" and others can
+   appear in the entry. 
+IG/Stanford 
+   An IG/Stanford entry begins with one or more comment lines
+   beginning with a ';', has a one-line description of the sequence
+   (the first line not beginning with ';'), and has one or more
+   sequence lines (all not beginning with ';'). Also, the sequence is
+   terminated with either a '1' or '2'. 
+ASN.1 
+   An ASN.1 text file (as implemented for biological sequences by
+   NCBI) consists of a hierarchy of records, each of which begins
+   with a keyword and is followed either by some strings and/or
+   numbers or by an open brace, the text of sub-records and a
+   close brace. Each sequence entry is a particular record in the
+   hierarchy, and this program supports the
+   "Bioseq-set.seq-set.seq" records in the "Bioseq-set"
+   hierarchy. 
+
+   (NOTE: The ASN.1 file format does not support all of the various
+   ASN.1 text files, just the "Bioseq-set" files that only contain
+   "Bioseq-set.seq-set.seq" records. Also, the program does not
+   support either the ASN.1 object file format or the compressed
+   object file format found on the Entrez CD-ROM.) 
+GCG 
+   A GCG entry begins with one or more comment lines, followed by
+   a GCG information line. That information line must end with the
+   string ".." (or at least the last non-whitespace characters on the
+   line must end with ".."). The information line should also contain
+   information about the sequence length, the alphabet, and a
+   checksum. The sequence lines appear after that, and continue to
+   the end of the file. There should only be one GCG entry per file. 
+GCG-* 
+   The header lines of a GCG-* entry should be exactly the same as
+   that for the GenBank, PIR, EMBL, Swiss-Prot, FASTA, NBRF and
+   IG/Stanford formats (with the exception that the "C;..." lines in
+   the GCG-NBRF format should appear in the header lines and
+   not after the sequence). After the header lines should come a
+   blank line followed by the GCG information line and the
+   sequence lines. The entry may end with a final "//" or "///" line
+   signalling the end of an entry, but this line is not required. There
+   should only be one GCG-* entry per file. 
+MSF 
+   An MSF entry begins with one or more comment lines, followed
+   by a GCG information line. On that information line, the
+   sequences' length should be preceeded by the string "MSF: ",
+   instead of the "Length: " string used in the basic GCG format.
+   Following that information line comes one or more sequence
+   identification lines and then a line beginning with "//", which
+   divides the sequence identification lines from the actual
+   sequence lines. The rest of the file contains the sequence lines.
+   There should only be one MSF entry per file. 
+PHYLIP 
+   A PHYLIP entry begins with a line specifying the number of
+   sequences and the length of the sequences in the entry, then it
+   contains the sequences either in an "interleaved" or a
+   "sequential" format. Also, a ten character identifier is given at
+   the beginning of each sequence. 
+
+   (NOTE: The program automatically distinguishes between the
+   interleaved and sequential formats. Also, the program can
+   handle the extra information included by an entry from the
+   PHYLIP 'A', 'C', 'F', 'M', 'U' and 'W' options.) 
+Clustalw 
+   A Clustalw file begins with a header line and then contains
+   blocks of interleaved sequences. Each sequence line begins with
+   a sequence identifier, and each block ends with an additional
+   line which highlights closely related columns in the alignment.
+   There is only one entry per file. 
+FASTA-out 
+   The output generated by the FASTA, TFASTA, SSEARCH,
+   LFASTA, LALIGN or ALIGN programs, where the alignments in
+   the output are formatted using a MARKX option value of 0, 1, 2, 3
+   or 10. (See the FASTA program distribution for a description of
+   this output.) 
+BLAST-out 
+   The output generated by the BLASTN, BLASTP and BLASTX
+   programs. (See the BLAST program distribution for a description
+   of this output.) 
+
+File Format Variations
+======================
+
+In addition to these basic file formats, there are four file "formats"
+which use faster file reading implementations. They are specifically
+geared to the formats of the GenBank, PIR, EMBL and SWISS-PROT
+databases, and they are included to speedup database searches (they
+run about 30% faster than the basic implementations, but at the cost of
+less error checking and depending that the file format exactly matches
+the database's format): 
+
+ o gbfast 
+ o pirfast 
+ o emblfast 
+ o spfast 
+
+My suggestion is that these formats only be used when searching the
+actual databases, and the basic file formats be used the rest of the time.
+The difference in time only becomes significant when reading files in
+the multi-megabyte range. 
+
+There are also format variants which have been added to account for
+FASTA, NBRF and IG/Stanford format limitations commonly in use. For
+FASTA and IG/Stanford, the limitation is that only one header line (any
+line beginning with a '>' or ';') may appear in the entry. For NBRF, the
+limitation is that no lines like "C;Accession:" or "C;Comment:" may
+appear after the sequence. The basic implementations do not follow
+these limitations, although entries which do follow the limitations can
+be correctly read. The formats below use a different output function
+which does follow the limitations. This makes the outputted entries
+readable by other programs that cannot handle anything other than the
+limited format. 
+
+ o NBRF-old (NBRFold) 
+ o FASTA-old (FASTAold) 
+ o Stanford-old (Stanfordold, IG-old, IGold) 
+
+Unlike the "fast" format variants above, these format variants are
+included in the GCG-* set of formats. So entries can be output in
+GCG-fastaold or GCG-NBRF-old format and the program will combine
+the restrictions on the header output with the GCG format for output
+the sequence lines. 
+
+
+
+Standards for Identifiers and Oneline
+*************************************
+Descriptions
+************
+
+Database Identifier and Identifier Prefixes
+===========================================
+
+Sequence entry identifiers can become confusing when it is no longer
+clear what database the identifier refers to. To try and reduce that
+confusion, this program always prepends an "identifier prefix" to each
+identifier that it uses. An identifier prefix is a 2, 3 or 4 character code
+naming the database the identifier comes from, and it is separated from
+the identifier itself by a colon ':'. Some examples of identifiers are
+"gb:A02201", "sp:104K_THEPA" and "pros:SULFATATION" (a GenBank,
+Swiss-Prot and PROSITE identifier, respectively). 
+
+The program tries to use a common set of identifier prefixes, and when
+an entry contains an identifier without a prefix, the program tries to
+attach an prefix as best it can based on the entry's format and any
+database information about that entry. In addition, the program uses
+these common identifier prefixes when trying to determine what entries
+an input filename or database specification refer to. 
+
+The set of identifiers that the program expects is the following (where
+the database name corresponding to the identifier prefix is given in
+parentheses): 
+
+ o oth - some other database (the database cannot be determined) 
+
+ o acc - (Accession) - Accession Numbers 
+ o ag2d - (AARHUS/GHENT-2DPAGE) - Human Keratinocyte 2D
+   Gel Protein DB from Aarhus and Ghent univ. 
+ o agis - (AGIS) - Agricultural Genome Information Server 
+ o bbs - (GIBBSQ) - GenInfo Backbone sequence gibbsq 
+ o bbm - (GIBBMT) - GenInfo Backbone MolType gibbmt 
+ o blks - (BLOCKS) - BLOCKS Database 
+ o cpg - (CpGIsle) - Cpg Islands Database 
+ o ddb - (DICTYDB) - Dictyostelium discoideum Database 
+ o ddbj - (DDBJ) - DNA Database of Japan 
+ o ec - (ENZYME) - ENZYME Database 
+ o eco - (EcoGene) - EcoGene sect. of EcoSeq/EcoMap Database 
+ o embl - (EMBL) - EMBL Nucleotide Sequence Database 
+ o epd - (EPD) - Eukaryotic Promoter Database 
+ o est - (dbEST) - Database of Expressed Sequence Tags 
+ o fly - (FlyBase) - Drosophila Genetic Maps Database 
+ o gb - (GenBank) - GenBank Genetic Sequence Data Bank 
+ o gcr - (GCRDB) - G-protein--coupled receptor database 
+ o gdb - (GDB) - Human Genome Database 
+ o gp - (GenPept) - GenBank Protein Translations 
+ o gi - (GI) - GenInfo Integrated Database 
+ o giim - (GIIM) - GenInfo Import identifier 
+ o hiv - (HIV) - HIV Sequence Database 
+ o imgt - (IMGT) - Immunogenetics Database 
+ o mdb - (MaizeDB) - Maize Genome Database 
+ o omim - (OMIM) - Mendelian Inheritance in Man Database 
+ o pat - (Patent) - Patented Sequence 
+ o pdb - (PDB) - Brookhaven Protein Data Bank 
+ o pir - (PIR) - Protein Sequence Database of the PIR 
+ o prf - (PRF) - Protein Resource Foundation Database 
+ o pros - (PROSITE) - PROSITE Dictionary of Sites and Patterns 
+ o reb - (REBASE) - Restriction Enzyme Database (REBASE) 
+ o rpb - (REPBASE) - Repetitive Element Database (REPBASE) 
+ o sp - (SWISSPROT) - Swiss-Prot Protein Sequence Database 
+ o sts - (dbSTS) - Database of Sequence Tagged Sites 
+ o tfd - (TRANSFAC) - Transcription Factor Database 
+ o wpep - (WORMPEP) - Caenorhabditis elegans genome
+   sequencing project protein collection 
+ o yepd - (YEPD) - Yeast Electrophoresis Prot. DB from Quest
+   Protein Database Center 
+
+This list is not complete, and the only identifier prefixes that currently
+matter to the program are "acc", "gb", "pir" "embl", "sp", "epd",
+"ddbj", "pdb", "prf", "bbs", "bbm", "gi" and "giim" because those
+identifiers are explicitly mentioned in one or more of the file formats the
+program supports. 
+
+My hope is that these identifier prefixes can become a common
+standard that everyone uses to specify the origin of an identifier (thus
+reducing the problem of creating a single common identifier valid
+across all databases). And, if you do create a new database, please
+create or define a unique identifier prefix to use with your database
+entries. 
+
+When the program finds an identifier in an entry that does not have an
+identifier prefix, it tries to attach a prefix to the entry. If the program is
+performing a database search, and the "IdPrefix" information field for
+that database is set, then that identifier prefix will be used. This
+provides a simple way for you to attach your unique identifier prefix to
+the entries of your database. It also provides a way to retain
+information about entries that you've extracted from a database and
+have put into your personal collection of sequences. Just copy the
+"IdPrefix" information field from the database's BIOSEQ entry into the
+BIOSEQ entry for your collection (assuming all of the sequences come
+from the same database). 
+
+If no "IdPrefix" field exists (either because no database search is being
+done or because no such information field has been given) and an
+identifier is seen without a prefix, then the program assumes that the
+identifier comes from the database most associated with that file format.
+So, identifiers in GenBank formatted entries are given "gb", in EMBL
+formatted entries are given "embl", and so on. The two exceptions to
+this rule are the NBRF format, whose entries get an "oth" prefix (for an
+unknown database), and the EMBL/Swiss-Prot format, where the
+program looks at the structure of the entry and determines as best it
+can whether the entry is an EMBL entry, a Swiss-Prot entry, an EPD
+entry or some other entry. The attached prefix is given accordingly. 
+
+One-line Sequence Descriptions
+==============================
+
+In addition to the standard for specifying identifiers, the program also
+uses a standard for parsing the "one-line" descriptions of the FASTA,
+NBRF and IG/Stanford file formats. The official description of those
+formats specify that the description line can contain any text, but this
+program makes a couple additional assumptions about what appears
+on that line when it tries to extract information about an entry's
+sequence. 
+
+The goals for this standard one-line format are the following: 
+
+ 1. The information on the line should consist of any or all of the
+   following items: sequence identifiers, a description text, the
+   organism name, the sequence length and alphabet/sequence
+   modifiers (fragment, circular, checksum, etc). 
+ 2. Try to minimize the "syntax" of the line, but at the same time be
+   able to parse the line regardless of which pieces of information
+   are missing and without any knowledge about the description
+   text, the organism name text or the alphabet/sequence modifier
+   text. 
+ 3. Try to make it look similar to description lines in existing
+   databases. 
+ 4. If a line was created not following this format, design the format
+   so that most or all of the text is considered the description text. 
+
+The standard one-line format the program uses consists of four
+sections, an identifier list section, a description text section, an
+organism text section and an sequence/alphabet section. Any of these
+sections may be missing from a line, as shown in a couple of these
+examples: 
+
+gb:A02201|acc:A02201 DNA for immF plypeptide - Phage phi-105, 664 bp.
+
+embl:CLEGCGA chloroplast, complete genome - green algae (E.gracilis), 143172 bp (circular DNA).
+
+African green monkey alpha-DNA - Cercopithecus aethiops, 208 bp (DNA).
+
+pir:CCCZ|acc:A00002 cytochrome c (tentative sequence) - chimpanzee
+
+~V01289 Yeast gene for actin
+
+sp:10KD_VIGUN 10 KD PROTEIN PRECURSOR (CLONE PSAS10), 75 aa.
+
+gi|77963 nifS protein - Bradyrhizobium japonicum, 11 bp (fragment, 582230BE checksum)
+
+The format of each of the sections, along with how the boundaries
+between sections are determined, are the following: 
+
+ 1. Section 1 is a list of identifiers separated by vertical bars, and
+   which contains no whitespace characters. The identifiers in the
+   list should be given in the standard prefix-':'-identifier format,
+   although the program can handle an initial accession number
+   given in the format "~A02201", as well as the identifier lists used
+   by the NCBI programs. 
+
+   This section is considered to appear in the line if 1) the third,
+   fourth or fifth character is a ':', 2) the first character is a '~', or 3)
+   the second or third character is a '|'. This covers the three
+   variations. The section ends at the first whitespace character. 
+
+ 2. Section 2 is the description text, and it runs from the end of the
+   list of identifiers (or the beginning of the line) to either the first
+   string marking the beginning of section 3 or 4, or to the end of
+   the line. Any text except those marking strings can occur in this
+   section. 
+
+ 3. Section 3 is the organism name, and its beginning is marked by
+   the string " - " (a space, a dash and a space). All of the text after
+   this marker is considered to specify the organism name, upto the
+   marker for section 4 or the end of the line. 
+
+ 4. Section 4 is the sequence/alphabet section, and determining its
+   beginning is a bit more complex, to allow as much freedom to the
+   description and organism text as possible. The
+   sequence/alphabet section consists of 
+    o a comma 
+    o a string of digits, 
+    o one of the strings "bp", "aa" or "ch", 
+    o an optional string appearing in parentheses. 
+   Each of these pieces is separated by one or more whitespace
+   characters. 
+
+   If such a section appears at the end of the line, then the
+   beginning of the section is marked by the comma. If this section
+   is found, then the string of digits gives the length of the
+   sequence, the "bp", "aa" and "ch" strings give some information
+   about the alphabet, and the string in the parentheses is checked
+   for words defining the alphabet or telling whether the sequence
+   is a fragment or a circular string. The optional string in
+   parentheses may contain any text, except any additional
+   parentheses. 
+
+Finally, a period may end the line and it is not considered as part of any
+of the sections. 
+
+The advantage of this format is that it packs a lot information into a
+single line, it is structured so that any piece of information can be
+unambiguously extracted from the line, and the extra syntax needed for
+the format (the " - " for the description/organism boundary and the
+comma and "aa", "bp" or "ch" for the sequence/alphabet section) is
+quite minimal. There is the slight disadvantage that the line sometimes
+is longer than 80 characters when all of the information appears on the
+line. But, then, there are always tradeoffs. 
+
+
+
+BIOSEQ Files and Specifying Database Searches
+*********************************************
+
+
+
+The number of databases is growing every day, and even with the same
+database, different sites will store the database files in different
+directories and using different filenames. Add to that the desire to
+create personal databases and the need to associate information with
+each database (such as the program options to use for each database
+in programs like FASTA and BLAST), and the situation becomes quite
+complex. The BIOSEQ standard was created and included as part of the
+SEQIO package to address these issues. 
+
+The BIOSEQ "standard" is mostly just a file format for describing one
+or more databases, along with a standard form for specifying a
+database search and a couple functions used by the program that read
+and understand the file format. You create one (or maybe a couple) of
+these BIOSEQ files describing the databases you have, tell the
+program where to locate those files, and then you can refer to and
+search the databases using the information from the files. 
+
+Simple BIOSEQ Files
+===================
+
+A BIOSEQ file is made up of one or more BIOSEQ entries, where each
+entry describes one database. In its simplest form, a BIOSEQ entry
+looks a lot like a FASTA sequence entry. The entry begins with a line
+that starts with a '>' and contains the database name. After that line
+comes one or more lines that do NOT begin with a '>' and which list the
+database files. Here is an example with two BIOSEQ entries: 
+
+>mydatabase
+   /databases/genbank/genpept.fasta /usr/home/knight/mydb/protein.dat
+   ~pearson/sequences
+>PIR
+  /databases/pir/pir1.dat, /databases/pir/pir2.dat,
+  /databases/pir/pir3.dat
+
+This example describes the files for two databases, "mydatabase" and
+"PIR". The files in a BIOSEQ entry are separated by spaces and
+commas (in the standard, a comma is considered a space character).
+The examples given here and below all use the Unix format for
+specifying filenames (i.e. with '/' as the directory separator), but the
+files actually specified in the BIOSEQ entries should be formatted
+according to the operating system being used. So, for Windows NT/95,
+the directory separator used should be a backslash '\', and the
+pathnames can begin with a disk drive letter, as in
+"C:\databases\genbank". 
+
+Once the BIOSEQ file is given to the program, either through the use of
+the `BIOSEQ' environment variable or through a program option, these
+databases can be searched using the strings "mydatabase" or "PIR".
+The strings "MYDATABASE", "pir", "mYDaTaBAsE" and "Pir" can also
+be used as a valid database search specification (i.e., a string that
+specifies what database or part of a database to search), because the
+matching of the database search specifier to the BIOSEQ entry's
+database name is case-insensitive. 
+
+Also, note that the files can use the Unix shell '~' characters for
+referring to home directories. This is true even on Windows machines
+(when the "HOME" environment variable is set). The tilde is used either
+as "~/mydb/file" to refer to files in your home directory (i.e., the actual
+file is "*HOME*/mydb/file") or as "~pearson/sequences" to refer to files
+in another person's home directory (i.e., the actual file is "
+*HOMEParent*/pearson/sequences" where HOMEParent is the parent
+of the home directory). The files can also be relative paths instead of
+absolute paths, however this is not recommended because those paths
+will always be treated as relative to where the program executes (which
+will change if you move into different directories). 
+
+The only restriction on database names is that no colons (:) can appear
+in the name. The only restrictions on the filenames in a BIOSEQ entry
+are that no whitespace characters (space, tab, newline), commas (,),
+asterisks (*), question marks (?), parentheses (`(', `)') or number signs
+(#) can appear in the filenames (these characters have special
+meanings), and that the filenames should refer to files that exist and
+can be read. 
+
+The BIOSEQ Environment Variable
+===============================
+
+Once a BIOSEQ file has been created, the main way to let the program
+know about it is to add it to the BIOSEQ environment variable. The
+value of the BIOSEQ environment variable should be a comma
+separated list of BIOSEQ files, like: 
+
+   ~/.bioseq,/databases/bioseq.txt,/usr/local/lib/BIOSEQ
+
+Whenever the program first tries to access a database, it looks at the
+value of the BIOSEQ environment variable and reads each of the files in
+the list. Like the Unix PATH and MANPATH variables, the order of the
+files in the list determine the order that the program will search through
+the BIOSEQ entries. 
+
+Note that this means that no BIOSEQ file can have a name containing a
+comma. (And for Unix users: I used commas to separate the files
+instead of colons, because Windows, VMS and the Mac all use colons
+in their pathnames. So, using a colon separator would not have been
+portable.) 
+
+Extending the Simple Format
+===========================
+
+This simple form of a BIOSEQ entry can be extended in eight ways: 
+
+ 1. Alternate database names 
+ 2. A root directory for the database files 
+ 3. Adding comments to the BIOSEQ file 
+ 4. Information fields giving information about the database 
+ 5. Virtual BIOSEQ entries 
+ 6. A shorthand for listing a sub-directory's files 
+ 7. Wildcards in the filenames 
+ 8. Aliases 
+
+The rest of this section describes each of these extensions, and then
+the next section on Database Search Specifiers fully describes the
+format of a database search specification (i.e., the strings you use to
+specify all or a part of a database). It also describes how those search
+specifications are matched against the database files, in the presence
+of aliases and wildcarded filenames. 
+
+Alternate Database Names
+++++++++++++++++++++++++
+
+A BIOSEQ entry can have more than one name used to refer to the
+entry by putting a space/comma separate list of names on the first line
+of the BIOSEQ entry. So, this entry 
+
+>mydatabase, mydb, proteins
+   /databases/genbank/genpept.fasta /usr/home/knight/mydb/protein.dat
+   ~pearson/sequences
+
+can be referred to using "mydatabase", "mydb" or "proteins" (or any
+variations of upper and lower case). 
+
+Root Directories
+++++++++++++++++
+
+A root directory can be specified for all of the files in that entry, if all of
+the files are stored in the same directory (or in the same set of
+sub-directories under one root). If a colon (:) appears on the first line
+of a BIOSEQ entry, then the text after the colon specifies the root
+directory (and this is why no colons can appear in the database
+names). So, this entry 
+
+>PIR: /databases/pir
+   pir1.dat, pir2.dat, pir3.dat
+
+is equivalent to the PIR entry in the first example above. Or the entry
+could be specified as 
+
+>PIR: /databases
+   pir/pir1.dat, pir/pir2.dat, pir/pir3.dat
+
+which is a useful form when the files are separated into several
+sub-directories under a common directory. If a root directory is
+specified, all of the files in the entry are assumed to be inside that
+directory (i.e., the path to a file is considered as "*root*/*file*").
+Also, note that the root directory does not end with a '/'. 
+
+Comment Lines
++++++++++++++
+
+Lines of comments can be added to the BIOSEQ file using the number
+sign (#) characters. A number sign appearing on any line that DOES
+NOT BEGIN with a '>' marks the rest of the line as a comment. In other
+words, on any of the database file lines or before the beginning of the
+first BIOSEQ entry, the text after `#' is considered as a comment. 
+
+On the lines beginning with a '>' (the first line of every BIOSEQ entry
+and the information field lines, which are described next), number signs
+are treated as any other character and do not begin a comment. The
+reason for that is so that number signs can be included as part of the
+information field text. 
+
+Information Fields
+++++++++++++++++++
+
+Additional pieces of information can be associated with a BIOSEQ entry
+by creating "information fields" just after the first line of the entry. Each
+information field consists of a line that begins with '>', has an name for
+the field, has a ':' separating the name from the text, and then has any
+string giving the information. Here is the PIR example with several
+information fields: 
+
+>PIR:  /databases/pir
+>Name: PIR
+>Title:  Protein Information Resources Databank -
+>        Version 43.00 (December, 1994)
+>Alphabet: Protein
+>Format: pirfast
+>IdPrefix: pir
+>Index: pirindex
+   pir1.dat, pir2.dat, pir3.dat
+
+The information fieldname can contain any character except whitespace
+or a ':', and the text of the information field can be any string. If the
+string is too long for a single line, the information field can be extended
+to multiple lines by beginning the second and later lines with a `>'
+followed by one or more spaces (as with the "Title" information field
+above). 
+
+When information fields are specified in a BIOSEQ entry, the program
+can then look for those fields by name and get the fields' text as the
+result of the lookup. Like the matching of database names, the
+matching of information field names is case-insensitive, so "Name",
+"NAME", "name" and "nAmE" all will match the "Name" information
+field in the entry above. 
+
+(Note: When a multiple line information field is accessed by a program,
+the newline, `>' and initial spaces are stripped from the string returned
+by the program. So, a program accessing the "Title" field from above
+gets the single line: 
+
+  Protein Information Resources Databank - Version 43.00 (December, 1994)
+
+There is no way to explicitly specify a multiple line information field to a
+program. The program will always see a single line.) 
+
+The program has five basic information fields that it looks for when
+performing a database search (plus possibly some other information
+fields described elsewhere in the documentation). They are 
+
+Name 
+   This is used by the program to distinguish between an actual
+   database and just a collection of files. The existence of the
+   "Name" field in a BIOSEQ entry is used as the test of whether the
+   entry refers to an actual database, as opposed to a personal
+   collection of related sequences. The program reacts slightly
+   differently when dealing with an actual database. (Nothing major,
+   just a minor difference in the comments of an output entry.) 
+Format 
+   This field specifies the file format for the files named in the
+   BIOSEQ entry. It should only appear when all of the files have
+   the same format. BIOSEQ entries with files of different formats
+   cannot specify a "Format" field and must rely on the program to
+   correctly determine the format of each file. 
+
+   Note that the example above specifies a "pirfast" for the file
+   format. Recall that "pirfast" is one of the variations of a file
+   format (as discussed above in the File Formats section) which
+   uses a fast file reading implementation. Typically, the "gbfast",
+   "pirfast", "emblfast" and "spfast" file formats should only be
+   used in the BIOSEQ entries for the actual GenBank, PIR, EMBL
+   and Swiss-Prot databases. 
+Alphabet 
+   This field specifies the alphabet of the sequences in the
+   database. It should only appear when all of the sequences use
+   that alphabet. 
+IdPrefix 
+   This field specifies the identifier prefix for the main identifier in
+   each sequence entry of the database. See the section above on 
+   Standards for Identifiers and Oneline Descriptions for the details
+   on identifier prefixes. 
+Index 
+   This field specifies the name of the index file used when trying to
+   randomly access the entries of a database. This index file must
+   have been created using the idxseq program. Note that the index
+   file can either be an absolute pathname or a relative pathname
+   (relative to the root directory of the BIOSEQ entry). 
+
+Virtual BIOSEQ Entries
+++++++++++++++++++++++
+
+Information fields are great for including database specific information
+with the description of the database files. But, one problem that might
+arise is if there is a global BIOSEQ file which describes the databases,
+but individual users want to have their personal BIOSEQ entries giving
+extra information about each database. Trying to collect and coordinate
+that information in the global BIOSEQ file could be too much of a
+headache, so the BIOSEQ standard permits the creation of "virtual"
+BIOSEQ entries. 
+
+A virtual BIOSEQ entry is an entry which only contains one or more
+entry names and one or more information fields. It does not contain any
+non-comment text in the section that normally specifies the BIOSEQ
+entry's files. Here is a possible virtual entry: 
+
+>PIR
+>Myprog-Opts:  -gap 5 -indel 2 -w 20
+>Matrix:  PAM120
+   # This is a virtual entry.
+
+With this entry and the previous entry both specified for the PIR
+database (documentation elsewhere should describe how to specify
+multiple BIOSEQ files to the program and in what order they will be
+read), field lookups for "Myprot-Opts" and "Matrix" will use the
+information from this virtual entry, and database search specifications
+will use the other entry to find the database files to read and the other
+information fields. 
+
+Note that every BIOSEQ entry must have at least one line which does
+not begin with a '>', so a virtual entry must have one or more of either
+blank lines or comment filled lines. 
+
+Sub-Directory List Shorthand
+++++++++++++++++++++++++++++
+
+The next two extension help deal with databases that consists of a lot of
+files. The first extension helps when the database files are separated
+into different sub-directories, and so the root directory path cannot
+specify the complete path to the filename. The BIOSEQ format provides
+a shorthand to specify the files in a sub-directory, so that you don't
+have to retype the sub-directory name for each file. Here is an example,
+taken from the BIOSEQ entry for the NFRES database: 
+
+>NFRES:  /databases/NFRES
+    all_v05/(bcta, inva, mama, orga, phga, plna, pria, roda,
+             vrla, vrta, yeaa)
+    cds_v05/(bctc, invc, mamc, orgc, phgc, plnc, pric, rodc,
+             vrlc, vrtc, yeac)
+    exo_v05/(inve, mame, orge, plne, prie, rode, vrle, vrte, yeae)
+    ivs_v05/(invi, mami, orgi, plni, prii, rodi, vrli, vrti, yeai)
+
+In this database, the files are separated into four sub-directories,
+"all_v05", "cds_v05", "exo_v05" and "ivs_v05". The shorthand is the
+use of parentheses just after the '/' to specify that the list of files within
+the parentheses are files in that sub-directory. 
+
+The list of files can stretch over multiple lines and can be interspersed
+with comments. In other words, the text inside the parentheses has the
+same formatting rules as the text outside the parentheses, with the
+exception that aliases cannot be defined inside the parentheses (
+aliases are described below). In addition, this shorthand can be nested
+to multiple levels, such as: 
+
+>mydatabase: ~/mydbs
+   nucleic/( human/(hum1 hum2 hum3)  rodent/(rod1 rod2 rod3 rod4)
+             ecoli/(eco1 eco2) )
+   protein/( human/(hum1.p hum2.p)  rodent/(rod1.p rod2.p rod3.p rod4.p)
+             ecoli/eco1.p )
+
+With this entry, an example complete pathname would be
+"~/mydbs/nucleic/rodent/rod2". 
+
+One restriction on the use of this shorthand is that it only can be used
+at the sub-directory boundary. So, the string "human/hum(1 2).p"
+cannot be used to specify the files "human/hum1.p" and
+"human/hum2.p". 
+
+Filename Wildcards
+++++++++++++++++++
+
+To handle large numbers of files, wildcard characters can be included
+to specify whole sets of files. The two wildcard characters supported
+are the question mark (?), which matches any single character, and the
+asterisk (*), which matches zero or more characters. These wildcard
+work just as in the Unix shells, meaning that the wildcards do not
+match across multiple directory levels (so "gb*.seq" does NOT match
+"gbfiles/inv.seq") and that the wildcards are matched to the existing
+files and directories. 
+
+So, as an example, assuming that the files specified in the
+"mydatabase" entry above are the only files in the listed
+sub-directories, then the following entry is equivalent to the previous
+example: 
+
+>mydatabase: ~/mydbs
+   nucleic/(human/* rodent/* ecoli/*)
+   protein/(human/hum?.p rodent/rod?.p ecoli/eco?.p)
+
+The wildcards can appear anywhere in the filename's path, and so for a
+database like PDB, whose files are structured like "02/pdb102l.ent",
+where "102l" is the sequence entry identifier and the sub-directory
+"02" are the middle two characters of that id, the following BIOSEQ
+entry captures PDB's structure 
+
+>PDB:  /databases/pdb
+  ??/pdb????.ent
+
+despite the fact that the PDB database contains hundreds of files. And
+this BIOSEQ entry would permit other files, like documentation files or
+index files, to be kept in /databases/pdb. In this example, please note
+that there is no explicit relation between the sub-directory name and
+the middle two characters of the four character id. That relationship
+must be maintained separately. This entry will match any file of the form
+"pdb????.ent" that is in a two character sub-directory of
+"/databases/pdb". 
+
+Aliases
++++++++
+
+The last extension in the BIOSEQ format is the use of aliases. An alias
+is just another name for one or more files in the BIOSEQ entry. As
+described in the next section, a database search specification can
+specify that only some of the files in the database should be searched,
+rather than all of them. Aliases provide a way to give short names for
+common searches of parts of a database. 
+
+There are two types of aliases, normal aliases and suffix aliases. Normal
+aliases consist of the alias name, the string ":(", a space/comma
+separated list of files, and a ')'. An example is the following: 
+
+>mydatabase: ~/mydbs
+   nucleic/( human/(hum1 hum2 hum3),  rodent/(rod1 rod2 rod3 rod4),
+             ecoli/(eco1 eco2) )
+   protein/( human/(hum1.p hum2.p),  rodent/(rod1.p rod2.p rod3.p rod4.p),
+             ecoli/eco1.p )
+
+   human:(hum1 hum2 hum3),  rodent:(rod1 rod2 rod3 rod4),
+   ecoli:(eco1 eco2)
+
+The last two lines define the aliases "human", "rodent" and "ecoli". If,
+with this entry, a database search specification of "mydatabase:rodent"
+were given to the program, the program would find this BIOSEQ entry,
+find the alias definition for "rodent", look for the four files "rod1",
+"rod2", "rod3" and "rod4", and then read the files
+"~/mydbs/nucleic/rodent/rod1", "~/mydbs/nucleic/rodent/rod2",
+"~/mydbs/nucleic/rodent/rod3" and "~/mydbs/nucleic/rodent/rod4".
+(For all of the details on how this is done, see the database search
+specification description below.) 
+
+Alias names may contain no whitespace characters (space, tab,
+newline), directory characters (/), number signs (#), question marks (?),
+asterisks (*) or tildes (~), with one exception for suffix aliases. 
+
+Suffix aliases are aliases whose names begin with a '~' character and
+which can be used to shorten even further the database search
+specification used to specify a part of a database. For example, to
+search the PIR database with this entry 
+
+>PIR:  /databases/pir
+   pir1.dat pir2.dat pir3.dat
+
+the search specification "pir" will search the whole database, but it
+would be nice to be able to specify just one of the files using "pir1" or
+"pir3", instead of "pir:pir1.dat" or "pir:pir3.dat". This can be done by
+adding the following suffix alias definitions: 
+
+   ~1:(pir1.dat)  ~2:(pir2.dat)  ~3:(pir3.dat)
+
+With these definitions, the search specification "pir1" will match to the
+"PIR" entry (since the entry name matches a prefix of the database
+search specification), look for a suffix alias definition whose string after
+the '~' is "1" (the rest of the database search specification), find it and
+then read the file "/databases/pir/pir1.dat". 
+
+In addition, suffix aliases without a suffix name (i.e., just the '~'
+character as the name) can be used to specify that only part of the
+database should be searched when given just the BIOSEQ entry's
+name as the search specifier. For example, in the NFRES database, all
+of the sequence entries are stored in the files in the "all_v05"
+sub-directory. Those sequence entries are duplicated and separated
+into the other sub-directories depending on whether the sequence is a
+cds, exon or intron. 
+
+>NFRES:  /databases/NFRES
+    all_v05/(bcta, inva, mama, orga, phga, plna, pria, roda, vrla, vrta, yeaa)
+    cds_v05/(bctc, invc, mamc, orgc, phgc, plnc, pric, rodc, vrlc, vrtc, yeac)
+    exo_v05/(inve, mame, orge, plne, prie, rode, vrle, vrte, yeae)
+    ivs_v05/(invi, mami, orgi, plni, prii, rodi, vrli, vrti, yeai)
+
+So, in order to search the whole database, only the files in the "all_v05"
+directory should be read, not all of the files mentioned by the entry.
+This can be specified by adding the following line to the entry: 
+
+    ~:(bcta, inva, mama, orga, phga, plna, pria, roda, vrla, vrta, yeaa)
+
+With this suffix alias definition, when the database search specification
+"NFRES" is given, this will match the suffix alias instead of specifying
+that the whole database should be searched. 
+
+
+
+Database Search Specifiers
+**************************
+
+Search Specifier Format
+=======================
+
+Now that the format of the BIOSEQ files have been described, how can
+they be used to search a database, or part of a database? This program
+supports three types of database search specifications: 
+
+ 1. A database name, such as "genbank", "PIR" or "mydatabase". 
+      It's the complete name of a BIOSEQ entry. 
+
+ 2. A database name plus a suffix alias, such as "pir1" or "pir3". 
+      A prefix matches a BIOSEQ entry name and the rest
+      matches a suffix alias in that entry. 
+
+ 3. A database name, a colon (':'), and then a space or comma
+   separated list of files, aliases and entry identifiers, such as "
+   pir:pir1.dat", "gb:humhb*" or "pdb:02/*, 05/*,
+   a?/pdbca*, */pdb???x.ent". 
+
+This section describes how each of these specification types is
+matched against the BIOSEQ entries. 
+
+When the search specification is just a database name, the first
+BIOSEQ entry that has a matching name and that is not a virtual entry
+(meaning that the database files are specified) is the entry where the
+database files are found. First, the entry is checked to see if it
+contains a suffix alias definition whose name is just "~". If so, then
+the text of the alias is expanded and searched for. If no such suffix
+alias is found, then the set of files to be read consists of all of
+the files listed in the entry. If any filenames contain wildcards,
+then those filenames are matched against the existing files and
+directories.
+
+The alias expansion process (for both normal and suffix aliases) is
+performed by considering the text inside the alias definition as a type 3
+search specifier, and recursively searching for each element of the list
+inside the alias definition. The two restrictions on this are that, first, the
+search specifiers in the alias definition can only refer to the current
+entry's files (and not the files/aliases of other BIOSEQ entries), and
+second, only 10 levels of recursion are allowed in the alias definitions.
+(So, yes, you can have aliases which refer to other aliases.) 
+
+When the search specification is a database name followed by a suffix
+alias, the BIOSEQ entry to match is the first entry with an entry name
+that matches a prefix of the search specifier and with a suffix alias
+definition whose name matches the rest of the search specifier. When a
+BIOSEQ entry matches, the text of the suffix alias is expanded and
+searched for to get the set of files to be read. If an entry only contains a
+match of an entry name with a specifier prefix (and does not have a
+matching suffix alias), then this entry does not match and other
+BIOSEQ entries are checked. The program does not stop at the first
+entry to match a prefix of the search specifier. 
+
+The third type of database search specifier is the most complex. When
+the specifier is a database name followed by a ':' and a list of files,
+aliases and entry identifiers, the search first scans the BIOSEQ entries
+for any entries with an entry name exactly matching the database name.
+If no such entries are found, the search then tries to treat the database
+name as an identifier prefix. It first looks to see if the database name
+matches an identifier prefix given in the list above (see the section on 
+identifier prefixes). If a match is found, the search scans the BIOSEQ
+entries with the corresponding database name. Otherwise, the search
+looks for the first BIOSEQ entry with an "IdPrefix" information field
+whose value matches the database name. If it finds such an entry, it
+uses the entry name for that BIOSEQ entry as the database name.
+Otherwise, an error message is triggered, saying that the program
+could not find a database for the search specifier. 
+
+Once at least one of a non-virtual BIOSEQ entry and an "Index" file for
+the database have been found, the search then goes through each of
+the file/alias/identifier elements of the database search specifier. It first
+tries to match the element against all of the files and aliases listed in
+the non-virtual BIOSEQ entry (if such an entry was found). The
+process for performing this matching is described in the next section. If
+no match was found by treating the element as a file or alias, the
+element is then treated as a database identifier and the index file is
+used to lookup the identifier (assuming an index file was found in the
+initial search). The entries of any matching identifiers in the database
+are considered to form the match to that element of the database
+search specification. If the lookup fails, then an error message is
+triggered, saying that the program count not find the element in the
+database. 
+
+Specifier-Filename Matching Process
+===================================
+
+For search specifiers of type 2 or 3, once the search specifier has been
+parsed to get the individual filenames and normal aliases described by
+that search specifier, each of them must be matched against the files
+and aliases found in the BIOSEQ entry. Such an element must be one
+of three things, a complete pathname matching the path given in the
+entry (NOT including the root directory path), a simple filename
+matching just the name of the file, or a normal alias name. 
+
+Pathnames and files/aliases are distinguished by the presence or lack
+of a directory character in the string ('/' for Unix and '\' for Windows). If
+the string contains a '/', then it is matched against the complete path of
+each file specified in the entry. So, in this "mydatabase" entry, 
+
+>mydatabase,mydb: ~/mydbs
+   nucleic/( human/(hum1 hum2 hum3),  rodent/(rod1 rod2 rod3 rod4),
+             ecoli/(eco1 eco2) )
+   protein/( human/(hum1.p hum2.p),  rodent/(rod1.p rod2.p rod3.p rod4.p),
+             ecoli/eco1.p )
+
+   human:(hum1 hum2 hum3),  rodent:(rod1 rod2 rod3 rod4),
+   ecoli:(eco1 eco2)
+
+valid complete paths are "nucleic/human/hum2" and "protein/ecoli/*.p".
+The path "human/hum1*" will not match anything as it does not match a
+complete pathname, unlike "*/human/hum1*" which matches
+"nucleic/human/hum1" and "protein/human/hum1.p". 
+
+If the string does not contain a '/', then it is considered either a
+filename or an alias and is matched against the filename of every file
+and the alias name of every alias definition. Thus, the database search
+specification "mydb:hum1" matches "nucleic/human/hum1", specifier
+"hum2*" matches "nucleic/human/hum2" and "protein/human/hum2.p"
+and specifier "human" matches the alias "human". Note that the
+specification "hum*" does NOT match the alias "human". Wildcards are
+only matched against files. 
+
+Both the filenames and pathnames can contain wildcard characters. So,
+what happens when both the filename/pathname search specifier and
+the pathname in the BIOSEQ entry contain wildcards? First, the search
+specifier filename/pathname is matched against the entry pathname, to
+see if a match is possible. Then, the entry pathname is expanded to all
+of the existing files which match that pathname, and each of those files
+is matched against the search specifier filename/pathname. Only the
+existing files which match both the entry pathname and the search
+specifier filename/pathname are included in the set of database files to
+be read. So, with the following BIOSEQ entry for GenBank: 
+
+>GenBank: /databases/genbank
+   gb*.seq
+
+The database search specifier "genbank:*s*s*" will match the files
+"/databases/genbank/gbest.seq", "/databases/genbank/gbsts.seq" and
+"/databases/genbank/gbsyn.seq", because those are the only files in
+the GenBank release which have the form "gb*.seq" and whose
+filenames contain two "s"'s. 
+
+This condition that a file included in the set of matched files must match
+both the entry pathname and the filename/pathname specifier also
+holds if only one of them contains wildcards. Thus, when the
+filename/pathname specifiers contain wildcards, only the files named in
+the BIOSEQ entry will ever be included. For example, the database
+search specification "mydb:nucleic/*/*" will only match the nine files in
+the "human", "rodent" and "ecoli" sub-directories listed in the
+BIOSEQ entry, even if other files occur in those sub-directories. As a
+corollary, the specification "database:*" will always match all of the files
+listed in the database's entry. 
+
+
+James R. Knight, knight@cs.ucdavis.edu
+June 27, 1996 

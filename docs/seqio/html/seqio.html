@@ -1,0 +1,220 @@
+<HTML>
+<HEAD>
+<TITLE>SEQIO:  A Package for Reading and Writing Sequence Files</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<HR>
+
+<P>
+<H1>SEQIO:  A Package for Reading and Writing Sequence Files</H1>
+
+<P>
+[<A
+HREF="ftp://ftp.cs.ucdavis.edu/pub/strings/seqio.tar.gz">Release</A>][<A
+HREF="seqio_toc.html">Table of Contents</A>][<A
+HREF="seqio_progr.html">Programmer's Guide</A>][<A
+HREF="seqio_user.html">User's Guide</A>][<A
+HREF="seqio_doc.html">Interface Guide</A>][<A
+HREF="fmtseq_doc.html">fmtseq</A>][<A
+HREF="idxseq_doc.html">idxseq</A>]
+
+<HR>
+
+<P>
+Almost anyone who performs sequence analysis or works with
+computerized databases eventually runs into the problem of wanting to
+do "something else."  Whether it's extracting entries from a database
+based on a relationship no one has provided software for, or writing
+new software that can handle different sequence file formats, the
+question then becomes, "Are the results gained from doing this
+`something else' really worth the effort?"  The SEQIO package is a
+C/C++library that has been designed to reduce that effort, both for
+people with little or no programming experience and for more
+experienced software developers.
+
+<P>
+<H2>For Non-Programmers</H2>
+
+The main advantages for non-programmers come when programs use the
+SEQIO package to perform their reading and writing.  The SEQIO package
+can read and write any of the 15 following file formats, eliminating,
+for programs that use the package, much of the worry about converting
+sequences from one file format to another in order to use the various
+programs:
+<blockquote>
+Raw/Plain, GenBank, PIR (CODATA), EMBL, Swiss-Prot, FASTA, NBRF,
+IG/Stanford, ASN.1 text, GCG, MSF, PHYLIP, Clustalw, FASTA-output,
+BLAST-output
+</blockquote>
+where FASTA-output and BLAST-output are the formats of the output
+produced by the FASTA and BLAST suites of programs.
+
+<P>
+In addition, the package also encapsulates the ability to randomly
+access the various databases and the ability to access single entries
+of a file.  So, specifying "<SAMP>gb:humhb*</SAMP>" will retrieve all
+of the human beta globin genes from GenBank (or, more precisely, all
+of the GenBank entries whose locus matches "<SAMP>humhb*</SAMP>") by
+randomly accessing the locations of those entries in the database.
+And, a specification like "<SAMP>myseqs@3,1,5</SAMP>" or
+"<SAMP>myseqs@al3csa</SAMP>" can extract the third, first and fifth
+entries from file "<SAMP>myseqs</SAMP>" (in that order) or can extract
+the first entry containing the identifier "<SAMP>al3csa</SAMP>".  Any
+program that uses the SEQIO package automatically has this feature
+(and, as discussed below, without any added complexity on the
+programming side).
+
+<P>
+The SEQIO package's release also comes with several complete programs.
+One of them is a file conversion program called "<A
+HREF="fmtseq_doc.html">fmtseq</A>" based on Don Gilbert's "readseq"
+program. One of the differences in fmtseq is its more robust
+interactive mode, with the following command interface display:
+<PRE>
+  Input:  fasta_out.30   (format: *auto*)
+ Output:  *stdout*   (format: pretty)
+ Deflts:  -verbose  -gapin=-  -gapout=-  -bigalign
+Options:  -ask
+ Pretty:  -interleave  -width=50  -colspace=10  -gapcount  -nameleft=8
+          -nametop  -interline=1
+
+Commands (-option - set option,  -no... - unset option, ? -help - list options,
+          -r -run - execute,  -q -quit - exit program, other - set input file)
+Enter: <B>-nameleft=11 -width=60 -numtop -numbottom -run</B>
+</PRE>
+The first two lines give the input and output (here the input
+file is "fasta_out.30" with an automatically determined format and the
+output is sent to standard output using the pretty-print format), the
+next three lines give the program options currently set (for example
+the `-gapin=-' and `-gapout=-' options specify what the gap symbol is
+in the input and what it should be when the output is produced, the
+`-ask' option tells the program to query the user to see which
+sequences should be converted, and the `-bigalign' option will be
+discussed in a minute), and the last lines list the possible commands,
+along with an example command which sets four of the pretty-print
+options and then runs the conversion.
+
+<P>
+The fmtseq program also has several abilities not found in other file
+conversion programs.  One is the ability to convert between the GCG
+and non-GCG forms of GenBank, PIR, EMBL, Swiss-Prot, FASTA, NBRF and
+IG/Stanford entries without losing any of the header information.
+Another is the ability to convert complete databases while retaining
+the file structure of the database.  For example, the command
+"<CODE>fmtseq genbank -split=fsa -format=fasta</CODE>" will convert
+the GenBank database into FASTA format while maintaining the divisions
+between the files (i.e., so "gbbct.fsa" contains the conversions of
+"gbbct.seq", "gbest1.fsa" contains all of the conversions of
+"gbest1.seq", and so on).
+
+<P>
+But, perhaps the most unusual feature is the ability to take output
+from the FASTA and BLAST set of programs and construct a <A
+HREF="bigaln_example.html">big alignment</A> from all of the pairwise
+alignments given in the file.  (That is what the `-bigalign' option
+specifies.)  The alignment is not a true multiple sequence alignment,
+in that no MSA algorithm is executed to produce the alignment, but the
+big alignment is formed by combining all of the pairwise alignments
+using the query sequence as the reference point, and then adding gaps
+as needed.  And the big alignment does automatically divide the plus
+strand matches from the minus strand matches when reading the output
+of a BLASTN search.
+
+<P>
+The release also contains a number of <A
+HREF="seqio_example.html">example programs</A> that are included to
+show how to use the SEQIO package.  It includes programs like typeseq
+to simply type, or "cat" for Unix folks, its input entries (although,
+with the database entry access described above, this program also
+works like GCG's fetch to fetch entries from a database), like wcseq
+to count the number of sequence, entries and nucleotides/amino-acids
+in the input, or like grepseq which can search for fixed-width motifs
+and output entries whose sequences match or approximately match the
+motif.
+
+<P>
+<H2>For Programmers</H2>
+
+For those with a little programming experience, the SEQIO package code
+has been designed to make reading and writing sequence files as simple
+to use as the C stdio package.  For example, the complete program
+below scans a database's sequences and outputs the entry text for
+every entry whose sequence has a match to the given keyword.  (Note:
+This is a simple version of the grepseq program.)  The package is
+ideal for writing those "quick and dirty" programs to extract entries
+from a database or perform a new analysis on the sequences of a file
+or database.
+<PRE>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include "seqio.h"
+
+int main(int argc, char *argv[])
+{
+  int len;
+  char *seq, *entry;
+  SEQFILE *sfp;
+
+  if (argc != 3) {
+    fprintf(stderr, "Usage:  prog keyword dbase\n");
+    exit(1);
+  }
+
+  if ((sfp = seqfopen2(argv[2])) == NULL)
+    exit(1);
+
+  while ((seq = seqfgetseq(sfp, &amp;len, 0)) != NULL) {
+    if (len &gt; 0 &amp;&amp; strstr(seq, argv[1]) != NULL) {
+      entry = seqfentry(sfp, NULL, 0);
+      fputs(entry, stdout);
+    }
+  }
+  seqfclose(sfp);
+}
+</PRE>
+(The functions <A HREF="seqio_doc.html#seqfopen2">seqfopen2</A>,
+<A HREF="seqio_doc.html#seqfgetseq">seqfgetseq</A> and
+<A HREF="seqio_doc.html#seqfentry">seqfentry</A> are SEQIO 
+functions that open a file or database, read the next sequence and
+return the current sequence's entry.  strstr is a C library function
+that finds the first occurrence of its second argument in its first
+argument.)
+
+<P>
+For more experienced programmers, the SEQIO package is an general
+purpose, efficient and cross-platform module for reading and writing a
+number of different sequence file formats.  It can read and return
+sequences and entries, as well as extract other information from an
+entry, such as identifiers, descriptions, organism names, comments and
+other things.  It can handle large sequences and large databases
+efficiently (the above program took less than 8 minutes on a DEC 5000
+to search all of GenBank Release 87.0, about 800MB of text and 250MB
+of sequence, for a random twenty character sequence).
+
+<P>
+The package is compatible with C and C++ programs, with most of the
+Unix variants and with Windows NT/95.  The addition of new formats or
+the support of other operating systems only requires willing
+volunteers to provide examples of the format or to help me test and
+port the package onto a new machine (support for VMS will be coming by
+the end of July).
+
+<P>
+The SEQIO package is freely available to anyone by 
+<A HREF="ftp://ftp.cs.ucdavis.edu/pub/strings/seqio.tar.gz">anonymous
+ftp</A> from ftp.cs.ucdavis.edu.  The release a gzip'ed, tar file
+containing the package code, documentation files and example
+programs.
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 26, 1996
+</ADDRESS>
+</BODY>
