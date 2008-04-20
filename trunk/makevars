@@ -1,0 +1,21 @@
+AR           = ar rv
+
+CXX          = g++
+
+CXX_FLAGS    = -Wno-unused 
+
+
+INC_DIR      = $(BIOSEQLIBROOT)/include
+
+LIB_NAME     = biolib
+
+LIB_DIR      = $(BIOSEQLIBROOT)/source
+
+DEBUG_FLAGS  = -DBIOLIB_DEBUG 
+
+
+%.o: %.C
+	$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -c $< -o $@ 
+
+%.C:
+	$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -c $@ -o $*.o 

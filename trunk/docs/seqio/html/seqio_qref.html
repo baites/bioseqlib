@@ -1,0 +1,651 @@
+<HTML>
+<HEAD>
+<TITLE>QUICKREF.DOC  -  A Quick Reference Guide to the SEQIO Package</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>QUICKREF.DOC  -  A Quick Reference Guide to the SEQIO Package</H1>
+
+<P>
+<H2><A NAME="defined">Defined Functions</A></H2>
+
+<UL>
+<LI> seqfopen, seqfopendb, seqfopen2, seqfclose,
+<LI> seqfread, seqfgetseq, seqfgetrawseq, seqfgetentry, seqfgetinfo,
+<LI> seqfsequence, seqfrawseq, seqfentry, seqfinfo, seqfallinfo,
+<LI> seqfdbname, seqffilename, seqfformat, seqfdate,
+<LI> seqfmainid, seqfmainacc, seqfidlist,
+<LI> seqfdescription, seqfcomment, seqforganism,
+<LI> seqfiscircular, seqfisfragment, seqfalphabet,
+<LI> seqffragstart, seqftruelen, seqfrawlen,
+<LI> seqfentryno, seqfseqno, seqfnumseqs,
+<LI> seqfoneline,
+<LI> seqfsetdbname, seqfsetalpha, seqfsetidpref, seqfsetpretty,
+<LI> seqfwrite, seqfconvert, seqfputs, seqfannotate,
+<LI> seqfgcgify, seqfungcgify,
+<LI> bioseq_read, bioseq_check, bioseq_info, bioseq_matchinfo, bioseq_parse,
+<LI> seqfisafile, seqfisaformat, seqffmttype,
+<LI> seqfcanwrite, seqfcanannotate, seqfcangcgify,
+<LI> seqfbytepos, seqfparseent, asn_parse,
+<LI> seqfperror, seqfsetperror, seqferrpolicy
+</UL>
+
+<H2>Defined Structures, Variables and Constants</H2>
+
+<UL>
+<LI> SEQFILE, SEQINFO  (Structures)
+<LI> seqferrno, seqferrstr  (Variables)
+<LI> DNA, RNA, PROTEIN, AMINO, UNKNOWN,
+<LI> E_EOF, E_NOERROR, E_OPENFAILED, E_READFAILED, E_NOMEMORY,
+<LI> E_PROGRAMERROR, E_PREVERROR, E_PARAMERROR, E_INVFORMAT,
+<LI> E_DETFAILED, E_PARSEERROR, E_DBPARSEERROR, E_DBFILEERROR,
+<LI> E_NOSEQ, E_DIFFLENGTH, E_INVINFO, E_FILEERROR
+<LI> PE_NONE, PE_WARNONLY, PE_ERRONLY, PE_NOWARN,
+<LI> PE_NOEXIT, PE_ALL
+</UL>
+
+<HR>
+       
+<P>
+<H1><A NAME="opening">Opening and Closing Files/Database-Searches</A></H1>
+
+SEQFILE *seqfopen(char *filename, char *mode, char *format)
+<P>
+<UL>
+<LI> filename - the file to be opened
+<LI> mode - "r", "w" or "a"
+<LI> format - the file format name (optional for reading)
+<P>
+<LI> returns an open SEQIO file structure (or NULL on error)
+</UL>
+<blockquote><I>
+Open a file for reading or writing.</I>
+</blockquote>
+
+<P>
+SEQFILE *seqfopendb(char *dbspec)
+<P>
+<UL>
+<LI> dbspec - a BIOSEQ database search specification
+<P>
+<LI> returns an open SEQIO file structure (or NULL on error)
+</UL>
+<blockquote><I>
+Open a database (or part of a database) to be read.</I>
+</blockquote>
+
+<P>
+SEQFILE *seqfopen2(char *string)
+<P>
+<UL>
+<LI> string - the filename (if it specifies an existing file) or
+database search specifier (otherwise)
+<P>
+<LI> returns an open SEQIO file structure (or NULL on error)
+</UL>
+<blockquote><I>
+Open a file for reading or start a database search.</I>
+</blockquote>
+
+<P>
+void seqfclose(SEQFILE *sfp)
+<P>
+<UL>
+<LI> sfp - the SEQFILE structure to be closed
+<P>
+<LI> returns nothing
+</UL>
+<blockquote><I>
+Close a file or database search.</I>
+</blockquote>
+
+<HR>
+
+<P>
+<H1><A NAME="reading">Reading Sequences/Entries</A></H1>
+
+int seqfread(SEQFILE *sfp, int flag)
+<P>
+<UL>
+<LI> sfp - an open SEQFILE structure
+<LI> flag - read the next sequence (if zero) or entry (non-zero)
+<P>
+<LI> returns 0 on success and -1 on EOF or error
+</UL>
+<blockquote><I>
+Read the next sequence or sequence entry.</I>
+</blockquote>
+
+<P>
+char *seqfgetseq(SEQFILE *sfp, int *length_out, int newbuffer)<BR>
+char *seqfgetrawseq(SEQFILE *sfp, int *length_out, int newbuffer)<BR>
+char *seqfgetentry(SEQFILE *sfp, int *length_out, int newbuffer)<BR>
+SEQINFO *seqfgetinfo(SEQFILE *sfp, int newbuffer)
+<P>
+<UL>
+<LI> sfp - an open SEQFILE structure
+<LI> length_out - address where the returned string's length is
+stored (if not NULL)
+<LI> newbuffer -  malloc a new buffer for the object (if non-zero) or
+return an internal buffer (if zero)
+<P>
+<LI> returns the sequence/entry text or the SEQINFO structure (or NULL
+on error)
+</UL>
+<blockquote><I>
+Read the next sequence or entry and return the sequence, entry or
+sequence information.</I>
+</blockquote>
+
+<HR>
+
+<P>
+<H1>Access Functions for the Current Sequence, Entry and Information</H1>
+
+char *seqfsequence(SEQFILE *sfp, int *length_out, int newbuffer)<BR>
+char *seqfrawseq(SEQFILE *sfp, int *length_out, int newbuffer)<BR>
+char *seqfentry(SEQFILE *sfp, int *length_out, int newbuffer)<BR>
+SEQINFO *seqfinfo(SEQFILE *sfp, int newbuffer)
+<P>
+<UL>
+<LI> sfp - an open SEQFILE structure
+<LI> length_out - address where the returned string's length is
+stored (if not NULL)
+<LI> newbuffer -  malloc a new buffer for the object (if non-zero) or
+return an internal buffer (if zero)
+<P>
+<LI> returns the sequence or entry text or the SEQINFO structure (or NULL
+on error)
+</UL>
+<blockquote><I>
+Return the sequence, raw sequence, entry or sequence information for
+the current sequence.</I>
+</blockquote>
+
+<A NAME="seqinfo"><P></A>
+<PRE>
+typedef struct {
+  char *dbname, *filename, *format;
+  int entryno, seqno, numseqs;
+
+  char *date, *idlist, *description;
+  char *comment, *organism, *history;
+  int isfragment, iscircular, alphabet;
+  int fragstart, truelen, rawlen;
+} SEQINFO;
+</PRE>
+
+char *seqfdbname(SEQFILE *sfp, int newbuffer)<BR>
+char *seqffilename(SEQFILE *sfp, int newbuffer)<BR>
+char *seqfformat(SEQFILE *sfp, int newbuffer)<BR>
+int seqfentryno(SEQFILE *sfp)<BR>
+int seqfseqno(SEQFILE *sfp)<BR>
+int seqfnumseqs(SEQFILE *sfp)<BR>
+char *seqfdate(SEQFILE *sfp, int newbuffer)<BR>
+char *seqfidlist(SEQFILE *sfp, int newbuffer)<BR>
+char *seqfdescription(SEQFILE *sfp, int newbuffer)<BR>
+char *seqfcomment(SEQFILE *sfp, int newbuffer)<BR>
+char *seqforganism(SEQFILE *sfp, int newbuffer)<BR>
+int seqfiscircular(SEQFILE *sfp)<BR>
+int seqfisfragment(SEQFILE *sfp)<BR>
+int seqffragstart(SEQFILE *sfp)<BR>
+int seqfalphabet(SEQFILE *sfp)<BR>
+int seqftruelen(SEQFILE *sfp)<BR>
+int seqfrawlen(SEQFILE *sfp)
+<P>
+<UL>
+<LI> sfp - an open SEQFILE structure
+<LI> newbuffer -  malloc a new buffer for the object (if non-zero) or
+return an internal buffer (if zero)
+<P>
+<LI> returns the information string or integer
+</UL>
+<blockquote><I>
+Access functions for information about the current sequence.</I>
+</blockquote>
+
+char *seqfmainid(SEQFILE *sfp, int newbuffer)<BR>
+char *seqfmainacc(SEQFILE *sfp, int newbuffer)<BR>
+<P>
+<UL>
+<LI> sfp - an open SEQFILE structure
+<LI> newbuffer -  malloc a new buffer for the object (if non-zero) or
+return an internal buffer (if zero)
+<P>
+<LI> returns the identifier stringor NULL
+</UL>
+<blockquote><I>
+Access functions for the main identifiers of the current sequence.</I>
+</blockquote>
+
+int seqfoneline(SEQINFO *info, char *buffer, int buflen, int idonly)
+<P>
+<UL>
+<LI> info - a SEQINFO structure
+<LI> buffer - the buffer to store the oneline description
+<LI> buflen - the buffer length
+<LI> idonly - only store an identifier for the sequence
+<P>
+<LI> returns the length of the string stored in buffer
+</UL>
+<blockquote><I>
+Constructs a "oneline" description of a sequence and stores it in the
+buffer.</I>
+</blockquote>
+
+<P>
+void seqfsetidpref(SEQFILE *sfp, char *idprefix)<BR>
+void seqfsetdbname(SEQFILE *sfp, char *dbname)<BR>
+void seqfsetalpha(SEQFILE *sfp, char *alphabet)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for reading
+<LI> idprefix - the identifier prefix (if not NULL or not empty)
+<LI> dbname - the current database name(if not NULL or not empty)
+<LI> alphabet - the string used to determine the alphabet when the
+entry does not specify an alphabet (if not NULL or not empty)
+<P>
+<LI> returns nothing
+</UL>
+<blockquote><I>
+Set or unset the value for the identifier prefix,
+database name or alphabet.</I>
+</blockquote>
+
+<HR>
+
+<P>
+<H1><A NAME="writing">Writing Sequences/Entries</A></H1>
+
+int seqfwrite(SEQFILE *sfp, char *seq, int seqlen, SEQINFO *info)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for writing
+<LI> seq - the sequence
+<LI> seqlen - the sequence length
+<LI> info - information about the sequence
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Output a sequence and its information.</I>
+</blockquote>
+
+<P>
+int seqfconvert(SEQFILE *input_sfp, SEQFILE *output_sfp)
+<P>
+<UL>
+<LI> input_sfp - a SEQFILE structure open for reading
+<LI> output_sfp - a SEQFILE structure open for writing
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Convert and output the current sequence of input_sfp.</I>
+</blockquote>
+
+<P>
+int seqfputs(SEQFILE *sfp, char *s, int len)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for writing
+<LI> s - the string to output
+<LI> len - the number of chars to output (or 0, specifying to output
+to the end of s)
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Output a string on the output stream (without any transformation or
+checking).</I>
+</blockquote>
+
+<P>
+int seqfannotate(SEQFILE *sfp, char *entry, int entrylen, char *newcomment,
+                 int flag)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for writing
+<LI> entry - the entry text to output
+<LI> entrylen - the length of the entry text
+<LI> newcomment - the comment to add to the entry
+<LI> flag - remove existing comments (if zero) or append the new
+comment (if non-zero)
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Output the passed in entry, adding the new comment.  (The entry must
+be in the format specified when opening the output stream.)</I>
+</blockquote>
+
+<P>
+int seqfgcgify(SEQFILE *sfp, char *entry, int entrylen)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for writing
+<LI> entry - the entry text to convert to the GCG format
+<LI> entrylen - the length of the entry text
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Output the passed in entry, converting the sequence lines into the GCG
+format.  (The SEQFILE structure must be opened to one of the GCG-*
+formats, and the format of the entry must match the `*' of the GCG-*.)</I>
+</blockquote>
+
+<P>
+int seqfungcgify(SEQFILE *sfp, char *entry, int entrylen)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for writing
+<LI> entry - the entry text to convert from the GCG format
+<LI> entrylen - the length of the entry text
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Output the passed in entry, converting the sequence lines back to the
+original format (from the GCG format).  (The format of the entry must
+be one of the GCG-* formats, and the SEQFILE structure must be opened
+to the `*' format matching the GCG-*.)</I>
+</blockquote>
+
+<HR>
+
+<P>
+<H1><A NAME="bioseq">BIOSEQ Database Functions</A></H1>
+
+int bioseq_read(char *filelist)
+<P>
+<UL>
+<LI> filelist - a comma separated list of files (must be BIOSEQ files)
+<P>
+<LI> returns 0 on success and -1 on error
+</UL>
+<blockquote><I>
+Read one or more BIOSEQ files and store the BIOSEQ entries in the files.</I>
+</blockquote>
+
+<P>
+int bioseq_check(char *dbspec)
+<P>
+<UL>
+<LI> dbspec - a database search specifier
+<P>
+<LI> returns non-zero if the string refers to a known database, or
+returns zero otherwise
+</UL>
+<blockquote><I>
+Test if the dbspec refers to a known BIOSEQ entry.</I>
+</blockquote>
+
+<P>
+char *bioseq_info(char *dbspec, char *fieldname)
+<P>
+<UL>
+<LI> dbspec - a database search specifier
+<LI> fieldname - the name of the information field to be returned
+<P>
+<LI> returns the text for that field of the BIOSEQ entry for that
+database.<BR>
+(NOTE:  the returned string buffer is a malloc'ed buffer, and it must
+be freed by you.) 
+</UL>
+<blockquote><I>
+Retrieve an information field for a BIOSEQ entry.</I>
+</blockquote>
+
+<P>
+char *bioseq_matchinfo(char *fieldname, char *fieldvalue)
+<P>
+<UL>
+<LI> fieldname - the name of an information field
+<LI> fieldvalue - the value that the information field should have
+<P>
+<LI> returns the name of a database.<BR>
+(NOTE:  the returned string buffer is a malloc'ed buffer, and it must
+be freed by you.) 
+</UL>
+<blockquote><I>
+Find the first database (in the list of BIOSEQ entries) which has an
+information field matching `fieldname' and whose value matches
+`fieldvalue'.</I> 
+</blockquote>
+
+<P>
+char *bioseq_parse(char *dbspec)
+<P>
+<UL>
+<LI> dbspec - a database search specifier
+<P>
+<LI> returns the list of files in a string where each file is
+terminated by a newline character and the whole string is terminated
+by a NULL character.<BR>
+(NOTE:  the returned string buffer is a malloc'ed buffer, and it must
+be freed by you.)
+</UL>
+<blockquote><I>
+Parse a BIOSEQ database specification and get the list
+of files that should be opened and read in that search.</I>
+</blockquote>
+
+<HR>
+
+<P>
+<H1><A NAME="misc">Miscellaneous</A></H1>
+
+int seqfisafile(char *filename)
+<P>
+<UL>
+<LI> filename - a filename (with a possible "@..." single entry access specification)
+<P>
+<LI> returns non-zero (if the filename refers to an existing file) or zero
+(if not)
+</UL>
+<blockquote><I>
+Test whether the filename refers to an existing file (even when the
+string contains a single entry access specification).</I>
+</blockquote>
+
+int seqfisaformat(char *format)
+<P>
+<UL>
+<LI> format - a file format string
+<P>
+<LI> returns non-zero (if the string is a valid file format) or zero
+(if not)
+</UL>
+<blockquote><I>
+Test whether the string is a valid file format.</I>
+</blockquote>
+
+<P>
+int seqffmttype(char *format)
+<P>
+<UL>
+<LI> format - a file format string
+<P>
+<LI> returns the format type or T_INVFORMAT (for an invalid
+format)
+</UL>
+<blockquote><I>
+Return a type information value about the format.</I>
+</blockquote>
+
+<P>
+int seqfcanwrite(char *format)
+<P>
+<UL>
+<LI> format - a file format string
+<P>
+<LI> returns non-zero (if that format is writeable) or zero (if not)
+</UL>
+<blockquote><I>
+Test whether the format is writeable.</I>
+</blockquote>
+
+<P>
+int seqfcanannotate(char *format)
+<P>
+<UL>
+<LI> format - a file format string
+<P>
+<LI> returns non-zero (if the format's entries can be annotated) or
+zero (if not)
+</UL>
+<blockquote><I>
+Test whether entries in the format can be annotated.</I>
+</blockquote>
+
+<P>
+int seqfcangcgify(char *format)
+<P>
+<UL>
+<LI> format - a file format string
+<P>
+<LI> returns non-zero (if the format's entries can be gcgified/ungcgified) or
+zero (if not)
+</UL>
+<blockquote><I>
+Test whether entries in the format can be gcgified or ungcgified.</I>
+</blockquote>
+
+<P>
+void seqfbytepos(SEQFILE *sfp)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for reading
+<P>
+<LI> returns the current byte position, or -1 on error
+</UL>
+
+<P>
+void seqfsetpretty(SEQFILE *sfp, int value)
+<P>
+<UL>
+<LI> sfp - a SEQFILE structure open for writing
+<LI> value - either non-zero or zero
+<P>
+<LI> returns nothing
+</UL>
+<blockquote><I>
+Should whitespace be added to the output sequence?<BR>
+(Plain, FASTA, NBRF and IG/Stanford formats only)</I>
+</blockquote>
+
+<P>
+SEQINFO *seqfparseent(char *entry, int entrylen, char *format)
+<P>
+<UL>
+<LI> entry - the text of an entry
+<LI> entrylen - the length of the entry
+<LI> format - the format of the entry
+<P>
+<LI> returns a malloc'ed SEQINFO structure containing the
+information about the entry.<BR>
+(NOTE:  This structure must be freed by you.)
+</UL>
+<blockquote><I>
+Retrieve the sequence information stored in the passed in entry.</I>
+</blockquote>
+
+<P>
+int asn_parse(char *begin, char *end, ...)
+<P>
+<UL>
+<LI> begin - the beginning of the ASN.1 text
+<LI> end - the end of the ASN.1 text (i.e., the last character of the
+ASN.1 text is at `end-1')
+<LI> ... - a NULL terminated list of arguments specifying the
+sub-records to be searched and the variables to store the beginning
+and end positions of the sub-record text.<BR>
+(NOTE:  These arguments must be given in groups of 3 until the NULL
+termination, such as in
+<PRE>
+  "seq.id.genbank", &amp;gbstart, &amp;gbend,
+  "seq.descr", &amp;destart, &amp;deend,
+  NULL
+</PRE>
+<P>
+The format for each triple is
+<PRE>
+  char *subrecord, char **begin_out, char **end_out
+</PRE>
+<P>
+and either begin_out or end_out can be NULL.)
+<P>
+<LI> returns a count of the number of sub-records found or a -1 on
+error
+</UL>
+<blockquote><I>
+Search an ASN.1 text format record (the string from
+`begin' to `end') for specified sub-records.</I>
+</blockquote>
+
+<HR>
+
+<P>
+<H1><A HREF="errors">Error Handling/Reporting</A></H1>
+
+extern int seqferrno;<BR>
+extern char seqferrstr[];
+<blockquote><I>
+External variables giving an error value and an error message string.</I>
+</blockquote>
+
+<P>
+void seqfperror(char *s)
+<P>
+<UL>
+<LI> s - a string (usually the program name) to be printed before the
+error string
+<P>
+<LI> returns nothing
+</UL>
+<blockquote><I>
+Output error message, similar to the Unix perror.</I>
+</blockquote>
+
+<P>
+void seqfsetperror(void (*perr_fn)(char *))
+<P>
+<UL>
+<LI> perr_fn - a void function that takes a string as its argument
+<P>
+<LI> returns nothing
+</UL>
+<blockquote><I>
+Sets the function used by the package to output all of its error
+messages.  If the argument is NULL, the default function (outputting
+to stderr) will be used.</I>
+</blockquote>
+
+<P>
+int seqferrpolicy(int pe)
+<P>
+<UL>
+<LI> pe - sets the error policy
+<P>
+<LI> returns the old error policy
+</UL>
+<blockquote><I>
+Sets the way the SEQIO package reports errors.</I>
+</blockquote>
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 26, 1996
+</ADDRESS>
+</BODY>

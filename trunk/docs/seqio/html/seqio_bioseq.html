@@ -1,0 +1,319 @@
+<HTML>
+<HEAD>
+<TITLE>BIOSEQ.TXT  -  An Example BIOSEQ File</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>BIOSEQ.TXT  -  An Example BIOSEQ File</H1>
+
+<HR>
+
+<PRE>
+#
+# bioseq.txt - BIOSEQ entries for various databases (Version 1.2)
+#
+# This file contains BIOSEQ entries for a number of databases.  Currently,
+# there are entries for GenBank, GenPept (part of GenBank), NRFES, NRL3D,
+# PIR, PROSITE, REPBASE, SWISS-PROT and UTR (part of NRFES).
+#
+# To customize it for your installation, go through the entries and for
+# each entry:
+#      1) Change the root directory from "/databases/..." to the 
+#         directory where you have installed that database's files.
+#     2a) If one of the choices listed in the entry matches your database
+#         file organization, uncomment the file/alias lines (if they
+#         have been commented).
+#     2b) If your installation differed from the choices listed in the
+#         entry, comment out any uncommented lines, add the names of
+#         the database's files, and rewrite the aliases.
+#      3) Comment out (or change the name of) any index files you don't
+#         want to use.  Only include the index files for the identifiers
+#         you want the users to be able to access entries by.
+#      4) Run idxseq for each of the databases to create the index files.
+#
+# In this version, only a few databases are given, but my hope is that
+# this file could become a canonical list of the databases, their
+# ftp/WWW locations or ordering information, and their file structure.
+# So, if you administer, or are familiar with, a database which either
+# is not included here, is incorrectly given here, or occurs in an ftp
+# site, CD-ROM or floppy disk release with another file structure,
+# please send e-mail to knight@cs.ucdavis.edu.
+#
+
+
+#
+# Virtual BIOSEQ entries used to create and store index files for 
+# the NID and PID identifiers  (to give random access to entries
+# using the "nid" and "pid" identifiers).
+#
+
+&gt;NID
+&gt;IdPrefix: nid
+&gt;Index: /databases/nididx
+
+&gt;PID
+&gt;IdPrefix: pid
+&gt;Index: /databases/pididx
+
+
+#
+# The EMBL Nucleotide Sequence Database
+#
+&gt;EMBL:  /databases/embl
+&gt;Name:  EMBL
+&gt;IdPrefix: embl
+&gt;Index: emblindex
+&gt;Format: emblfast
+&gt;Alphabet:  DNA
+    #
+    # EMBL files as found at ftp site ftp.ebi.ac.uk in 
+    # /pub/databases/embl/release.
+    #
+    est?.dat, fun.dat, hum?.dat, inv.dat, mam.dat, org.dat, patent.dat,
+    phg.dat, pln.dat, pro.dat, rod.dat, sts.dat, syn.dat, unc.dat
+    vrl.dat, vrt.dat
+
+    est:(est?.dat),  est1:(est1.dat),  est2:(est2.dat),  est3:(est3.dat),
+    est4:(est4.dat),  est5:(est5.dat),  est6:(est6.dat),  fun:(fun.dat),
+    hum:(hum?.dat),  hum1:(hum1.dat),  hum2:(hum2.dat),  inv:(inv.dat),
+    mam:(mam.dat),  org:(org.dat),  pat:(patent.dat),  patent:(patent.dat),
+    phg:(phg.dat),  pln:(pln.dat),  pri:(pri.dat),  pro:(pro.dat),
+    rod:(rod.dat),  sts:(sts.dat),  syn:(syn.dat),  unc:(unc.dat),
+    vrl:(vrl.dat),  vrt:(vrt.dat)
+
+   
+#
+# The ENZYME Database
+#
+&gt;enzyme:  /databases/enzyme
+&gt;Name: ENZYME
+&gt;IdPrefix: ec
+&gt;Index: ecindex
+&gt;Format: EMBL
+    #
+    # Enzyme files as found at ftp site ncbi.nlm.nih.gov in /repository/enzyme.
+    #
+    enzyme.dat
+
+
+#
+# The GenBank Flat-File Database
+#
+&gt;GenBank,gb:  /databases/genbank
+&gt;Name:  GenBank
+&gt;IdPrefix:  gb
+&gt;Index: gbindex
+&gt;Format:  gbfast
+&gt;Alphabet:  DNA
+    #
+    # GenBank files as found at ftp site ncbi.nlm.nih.gov in /genbank.
+    # Uncomment one of the alternatives for the between-release, daily
+    # files (if you have those files).
+    # 
+    gbbct.seq, gbest?.seq, gbinv.seq, gbmam.seq, gbpat.seq, gbphg.seq
+    gbpln.seq, gbpri.seq, gbrna.seq, gbrod.seq, gbsts.seq, gbsyn.seq,
+    gbuna.seq, gbvrl.seq, gbvrt.seq
+
+    bct:(gbbct.seq), est:(gbest?.seq), est1:(gbest1.seq), est2:(gbest2.seq)
+    est3:(gbest3.seq), est4:(gbest4.seq), est5:(gbest5.seq)
+    est6:(gbest6.seq), est7:(gbest7.seq), inv:(gbinv.seq),  mam:(gbmam.seq)
+    pat:(gbpat.seq), phg:(gbphg.seq), pln:(gbpln.seq), pri:(gbpri.seq)
+    rna:(gbrna.seq), rod:(gbrod.seq), sts:(gbsts.seq), syn:(gbsyn.seq)
+    una:(gbuna.seq), vrl:(gbvrl.seq), vrt:(gbvrt.seq)
+    ~bct:(gbbct.seq), ~est:(gbest?.seq), ~inv:(gbinv.seq),  ~mam:(gbmam.seq)
+    ~pat:(gbpat.seq), ~phg:(gbphg.seq), ~pln:(gbpln.seq),  ~pri:(gbpri.seq)
+    ~rna:(gbrna.seq), ~rod:(gbrod.seq), ~sts:(gbsts.seq),  ~syn:(gbsyn.seq)
+    ~una:(gbuna.seq), ~vrl:(gbvrl.seq), ~vrt:(gbvrt.seq)
+
+    # daily/gbcu.flat,  daily:(daily/gbcu.flat)
+    # daily-nc/nc????.flat,  daily:(daily-nc/nc????.flat)
+
+
+#
+# The GenPept Protein Translation of GenBank coding sequences.
+#
+&gt;GenPept:  /databases/genbank
+&gt;Name:  GenPept
+&gt;IdPrefix:  gp
+&gt;Index: genpeptindex
+&gt;Format:  FASTA
+&gt;Alphabet:  Protein
+    #
+    # GenPept files as found at ftp site ncbi.nlm.nih.gov in /genbank
+    #
+    genpept.fsa, daily/gpcu.fsa
+
+
+#
+# The Non-Redundant Functionally Equivalent Sequences (NRFES) Database.
+#
+&gt;NRFES:  /databases/NRFES
+&gt;Name:  NRFES
+&gt;IdPrefix:  gb
+&gt;Index: nrfesindex
+&gt;Format:  NBRF
+&gt;Alphabet:  DNA
+    #
+    # NRFES files as found at ftp site ncbi.nlm.nih.gov in /repository/NRFES.
+    #
+    all_v05/(bcta, inva, mama, orga, phga, plna, pria, roda, vrla, vrta, yeaa)
+    cds_v05/(bctc, invc, mamc, orgc, phgc, plnc, pric, rodc, vrlc, vrtc, yeac)
+    exo_v05/(inve, mame, orge, plne, prie, rode, vrle, vrte, yeae)
+    ivs_v05/(invi, mami, orgi, plni, prii, rodi, vrli, vrti, yeai)
+
+    ~:(bcta, inva, mama, orga, phga, plna, pria, roda, vrla, vrta, yeaa)
+    all:(bcta, inva, mama, orga, phga, plna, pria, roda, vrla, vrta, yeaa)
+    cds:(bctc, invc, mamc, orgc, phgc, plnc, pric, rodc, vrlc, vrtc, yeac)
+    exo:(inve, mame, orge, plne, prie, rode, vrle, vrte, yeae)
+    ivs:(invi, mami, orgi, plni, prii, rodi, vrli, vrti, yeai)
+
+    bct:(bcta), inv:(inva), mam:(mama), org:(orga), phg:(phga), pln:(plna)
+    pri:(pria), rod:(roda), vrl:(vrla), vrt:(vrta), yea:(yeaa)
+
+
+#
+# The NRL_3D Protein Sequence--Structure Database (a mirror of the PDB
+# database in PIR/CODATA file format).
+#
+&gt;NRL3D:  /databases/pir
+&gt;Name:  NRL3D
+&gt;IdPrefix:  pdb
+&gt;Index: nrl3dindex
+&gt;Format:  pirfast
+&gt;Alphabet:  Protein
+    #
+    # NRL_3D files as included in the PIR release found at ftp site
+    # ncbi.nlm.nih.gov in /repository/PIR.
+    #
+    nrl3d.dat
+
+
+#
+# The Protein Information Resource (PIR) Database.
+#
+&gt;PIR:  /databases/pir
+&gt;Name:  PIR
+&gt;IdPrefix:  pir
+&gt;Index: pirindex
+&gt;Format:  pirfast
+&gt;Alphabet:  Protein
+    #
+    # PIR files as found at ftp site ncbi.nlm.nih.gov in /repository/PIR.
+    #
+    pir1.dat, pir2.dat, pir3.dat pir4.dat
+    
+    ~1:(pir1.dat), ~2:(pir2.dat), ~3:(pir3.dat), ~4:(pir4.dat)
+    ~12:(pir1.dat,pir2.dat), ~13:(pir1.dat,pir3.dat), ~23:(pir2.dat,pir3.dat)
+    ~123:(pir1.dat,pir2.dat,pir3.dat)
+    
+
+#
+# The PROSITE Pattern Database.
+#
+&gt;PROSITE:  /databases/prosite
+&gt;Name:  PROSITE
+&gt;IdPrefix:  pros
+&gt;Index: prositeindex
+&gt;Format: EMBL
+    #
+    # PROSITE files as found at ftp site ncbi.nlm.nih.gov in
+    # /repository/prosite.
+    #
+    prosite.dat
+
+
+#
+# The REPBASE Repetitive Element Database.
+#
+&gt;repbase:  /databases/repbase
+&gt;Name:  REPBASE
+&gt;IdPrefix:  rpb
+&gt;Index: repbaseindex
+&gt;Format:  EMBL
+    #
+    # REPBASE files as found at ftp site ncbi.nlm.nih.gov in
+    # /repository/repbase.
+    #
+    MAIN/(B1.rodent, B2.rodent, L1.primate, MIR.mammal, MIR.primate,
+          MIR.rodent, MIR2.primate, THE.mammal, THE.primate, THE.rodent,
+          THR.human, alu.galago, alu.human, alu.other)
+    MER/MER*.pri
+    REF/(humrep.ref, invrep.ref, mamrep.ref, plnrep.ref, rodrep.ref,
+         simple.ref, vertrep.ref)
+
+    B1:(B1.rodent), B2:(B2.rodent), L1:(L1.primate)
+    MIR:(MIR.mammal, MIR.primate, MIR.rodent), MIR2:(MIR2.primate)
+    THE:(THE.mammal, THE.primate, THE.rodent), THR:(THR.human)
+    alu:(alu.galago, alu.human, alu.other)
+    rodent:(B1.rodent, B2.rodent, MIR.rodent),
+    rod:(B1.rodent, B2.rodent, MIR.rodent),
+    primate:(L1.primate, MIR.primate, MIR2.primate, THE.primate)
+    pri:(L1.primate, MIR.primate, MIR2.primate, THE.primate)
+    mammal:(MIR.mammal, THE.mammal), mam:(MIR.mammal, THE.mammal)     
+    human:(THR.human, alu.human)
+
+
+#
+# The SWISS-PROT Protein Sequence Data Bank.
+#
+&gt;SWISS-PROT,swissprot,sprot:  /databases/swiss-prot
+&gt;Name:  SWISS-PROT
+&gt;IdPrefix:  sp
+&gt;Index: sprotindex
+&gt;Format:  spfast
+&gt;Alphabet:  Protein
+    #
+    # SWISS-PROT files as found at ftp site ncbi.nlm.nih.gov in
+    # /repository/swiss-prot.  The ?? match the release number of
+    # the database.
+    #
+    sprot??.dat
+
+    #  updates/new-seq.dat
+
+
+#
+# The UTR Database (UnTRanslated regions of protein coding genes).
+# 
+&gt;UTR:  /databases/NRFES/utr
+&gt;Format: FASTA
+&gt;Index: utrindex
+&gt;Alphabet: DNA
+    #
+    # UTR files as included in the NRFES release found at ftp site
+    # ncbi.nlm.nih.gov in /repository/NRFES/utr.
+    #
+    amp_3p, bird_3p, dro_3p, fish_3p, inse_3p, mam_3p, mollu_3p
+    mou_3p, nema_3p, prot_3p, rat_3p
+    amp_5p, bird_5p, dro_5p, fish_5p, inse_5p, mam_5p, mollu_5p
+    mou_5p, nema_5p, prot_5p, rat_5p
+
+    ~_3p:(amp_3p, bird_3p, dro_3p, fish_3p, inse_3p, mam_3p, mollu_3p,
+          mou_3p, nema_3p, prot_3p, rat_3p)
+    ~_5p:(amp_5p, bird_5p, dro_5p, fish_5p, inse_5p, mam_5p, mollu_5p,
+          mou_5p, nema_5p, prot_5p, rat_5p)
+    3p:(amp_3p, bird_3p, dro_3p, fish_3p, inse_3p, mam_3p, mollu_3p,
+        mou_3p, nema_3p, prot_3p, rat_3p)
+    5p:(amp_5p, bird_5p, dro_5p, fish_5p, inse_5p, mam_5p, mollu_5p,
+        mou_5p, nema_5p, prot_5p, rat_5p)
+    amp:(amp_3p,amp_5p), bird:(bird_3p,bird_5p), dro:(dro_3p,dro_5p)
+    fish:(fish_3p,fish_5p), inse:(inse_3p,inse_5p), mam:(mam_3p,mam_5p)
+    mollu:(mollu_3p,mollu_5p), mou:(mou_3p,mou_5p), nema:(nema_3p,nema_5p)
+    prot:(prot_3p,prot_5p), rat:(rat_3p,rat_5p)
+</PRE>
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 27, 1996
+</ADDRESS>
+</BODY>

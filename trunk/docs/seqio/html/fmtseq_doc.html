@@ -1,0 +1,562 @@
+<HTML>
+<HEAD>
+<TITLE>fmtseq  -  A File Conversion Program</TITLE>
+<owner_name="James Knight, knight@cs.ucdavis.edu">
+<LINK REV="made" HREF="mailto:knight@cs.ucdavis.edu">
+</HEAD>
+
+<BODY>
+
+<I><A HREF="seqio.html">SEQIO -- A Package for Sequence File I/O</A></I>
+<HR>
+
+<P>
+<H1>fmtseq  -  A File Conversion Program</H1>
+
+<P>
+<HR>
+
+<P>
+This program is a reimplementation and extension of Don Gilbert's
+readseq program for performing file format conversions.  Its main
+purpose is to convert biological sequence files from one format to
+another, although it's interactive mode is robust enough that it can
+serve as a simple sequence viewer.
+
+<P>
+The program runs in two modes, interactive and non-interactive.  The
+program runs non-interactively if an input file or the `-pipe' option
+is specified on the command line.  In that mode, the program simply
+performs the conversions of the given input files (or standard input
+if `-pipe' is used) and then exits.  Using the `-verbose' option in
+non-interactive mode will cause the program to output progress
+messages, but otherwise the program runs silently.  The interactive
+mode of the program is described below.
+
+
+<P>
+<H2><A NAME="readseq_diff">Differences from readseq</A></H2>
+
+The program options and the operation of those options are essentially
+taken from the readseq program.  For those familiar with the
+readseq program, every option in that program occurs in this one, and
+they all perform the same function except for the following:
+<UL>
+<LI>
+`-verbose' is no longer the default option in non-interactive mode.
+It is the default in interactive mode.
+<LI>
+`-all' is now the default sequence selection method.
+<LI>
+The file formats supported are different, and the format numbers used
+to refer to those file formats have changed.
+<LI>
+The purpose of `-degap' has changed slightly.  See the Sequence
+Transformations section below for how `-degap' and `-raw' affect the
+sequence characters output.
+</UL>
+In addition, there are a number of new options:
+<blockquote>
+`-ask', `-bigalign', `-gapchar', `-gapin', `-gapout', `-idprefix',
+`-long', `-mode', `-no...' (see below), `-raw', `-split', `-informat',
+`-interleave', `-skipempty'
+</blockquote>
+The descriptions of these options, along with all of the old options,
+is given below.
+
+<P>
+<H2><A NAME="interactive">Interactive Mode</A></H2>
+
+In the interactive mode, the program always displays the current
+input, output and option settings, and it allows the user to customize
+each file conversion by setting and unsetting those values.  The
+program in this mode is very simple to use and is best learned by
+running the program, but here are a couple tips about how the
+interaction works:
+<UL>
+<LI>
+The commands you enter should look just as if you were writing a
+command line (except for any of the shell operations, like quoting,
+variable substitutions, and so on).  And yes, you can enter more than
+one option at a time.
+
+<P>
+<LI>
+Remember, it's `-r' (`-run') and `-q' (`-quit') to perform a
+conversion or quit the program.  If you just type `r' or `q', that
+just sets the input file.
+
+<P>
+<LI>
+Any option that is not displayed is an unset option, except that the
+pretty-print options are only displayed when the output format is set
+to `Pretty'.
+
+<P>
+<LI>
+When an output file other than standard output is specified and a file
+conversion has been performed, the output file stays open, and it is only
+closed when the output file or output format is changed or when the
+program exits.  The reason for this is so that you can convert several
+input files into one large output file interactively.
+
+<P>
+The disadvantage with this occurs when the output format is the
+PHYLIP, Clustalw, MSF or Pretty format.  These formats delay the
+actual writing of the output until the file is closed (they need to
+know how many sequences will appear in the file before they can start
+producing the output).  So, you need to close the output before you
+can look at it.  The easiest way to do that is to enter the command
+`-noo' or `-nof' (short for `-nooutput' and `-noformat').
+</UL>
+
+<P>
+<H2><A NAME="options">Program Options</A></H2>
+
+<PRE>
+Program Options (text in [...] is optional):
+  -al[l]            select all sequences
+  -as[k]            ask whether to select each sequence
+  -b[igalign]       convert FASTA program output to big alignment
+  -c[aselower]      convert to lowercase
+  -C[ASEUPPER]      convert to uppercase
+  -d[egap]          remove gaps from sequences
+  -gapch[ar=-]      set the gap symbol for both input and output
+  -gapi[n=-]        set the gap symbol for the input
+  -gapo[ut=-]       set the gap symbol for the output
+  -id[prefix]=gb    set identifier prefix for input
+  -i[tem=]2,3,4     select sequences by position in input
+  -li[st]           only list sequence information
+  -lo[ng]           long form conversion (input header included as comment)
+  -mo[de]=pretty1   run program in specified mode (listed in BIOSEQ entry)
+  -p[ipe]           read from standard input
+  -no...            unset any program option (eg `-noitem')
+  -o[utput=]out.seq specify an output file
+  -ra[w]            leave gaps in sequences
+  -re[verse]        reverse-complement each sequence
+  -sp[lit]=ext      split output to separate files
+  -v[erbose]        output progress messages
+  -f[ormat=]name    set output format by name
+  -f[ormat=]#       set output by number
+  -inf[ormat]=name  set input format by name
+  -inf[ormat]=#     set input format by number
+       1. Raw                      12. NBRF                  
+       2. Plain                    13. NBRF-old              
+       3. EMBL                     14. IG/Stanford  (ig)     
+       4. Swiss-Prot  (sprot)      15. IG-old                
+       5. GenBank  (gb)            16. GCG                   
+       6. PIR  (codata)            17. MSF (gcg-msf)         
+       7. ASN.1  (asn)             18. PHYLIP                
+       8. FASTA  (Pearson)         19. PHYLIP-Int  (phylipi) 
+       9. FASTA-old                20. PHYLIP-Seq  (phylips) 
+      10. FASTA-output (fout)      21. Clustalw  (clustal)   
+      11. BLAST-output (bout)      22. Pretty                
+
+Pretty-print Options:
+  -interle[ave]     output interleaved sequences
+  -w[idth=#]        sequence line width
+  -t[ab=#]          indent sequence
+  -co[lspace=#]     add space columms in sequence lines
+  -gapco[unt]       count gap chars in sequence numbers
+  -namel[eft=#]     print name to left of sequences
+  -namer[ight=#]    print name to right of sequences
+  -namet[op]        print names at top of output
+  -numl[eft]        print position numbers to left of sequences
+  -numr[ight]       print position numbers to right of sequences
+  -numt[op]         print position numbers above sequences
+  -numb[ottom]      print position numbers below sequences
+  -ma[tch=.]        replace matches to first sequence
+  -interli[ne=#]    add blank lines between sequence blocks
+  -sk[ipempty]      don't output lines with only gap characters
+</PRE>
+
+
+<H2><A NAME="use">Option Format and Use</A></H2>
+
+The format for the options is essentially the same as in readseq.  An
+option is specified using a unique prefix of the option name and using
+any combination of uppercase and lowercase letters.  If a value is
+specified for that option, it is specified as `-option=value', where a
+'=' is used to separate the option from the value.  No spaces are
+permitted in the option specification (so `-option value' is NOT
+permitted).
+
+<P>
+There are a couple exceptions to this, in order to maintain
+compatibility with readseq.  First, `-caselower' and `-CASEUPPER' must
+be given using the appropriate case, and their unique prefix is
+determined by the case of the letters instead of the string itself (so
+`-c', `-C', `-CASE' and `-cas' are all valid options).
+
+<P>
+Second, there are shortcut options `-ivalue', `-fvalue' and `-ovalue'
+for the `-item', `-format' and `-output' options.  In these shortcuts,
+the value is not separated by a '=', but specified immediately after
+the 'i', 'f' or 'o'.  Note that this shortcut is only valid for `-i',
+`-f' and `-o', and not any longer prefix.
+
+<P>
+Any option can be unset by prepending the option name with the
+string "no", as in `-nooutput', `-nocase' or `-nointerleave'.  For the
+options that correspond to program flags, unsetting the option will
+disable that flag.  For options with values, unsetting the option will
+cause its value to revert to a default value (for `-nooutput', the
+output reverts to standard output, for `-nogapchar' or `-nogapin', the
+program will assume that no gap symbols occur in the sequence).  Any
+option can be set or unset as needed, either interactively or on the
+command line (except for `-pipe' which cannot be set interactively).
+
+<P>
+In addition to setting and unsetting options from either the command
+line or the interactive mode command line, the program allows the use
+of "run modes" for setting many different options at once.  In order
+to use this run mode option, a BIOSEQ file must be created and the
+<A HREF="seqio_user.html#envvar">environment variable "BIOSEQ"</A>
+must include the name of that file.  (See file "user.doc" for complete
+information on <A HREF="seqio_user.html#bioseq">creating BIOSEQ
+files</A>.)  If a BIOSEQ entry is created in that file with the name
+"fmtseq", the information lines in that BIOSEQ entry can specify the
+various run modes of the program.  For example, if the following
+BIOSEQ entry occurred in the BIOSEQ file:
+<PRE>
+&gt;fmtseq
+&gt;blast: -informat=blast-out -fpretty -nogapcount -nameleft -numleft -nametop
+&gt;fasta:  -fpretty  -nametop  -nameleft=11  -width=60  -nocolspace
+&gt;        -gapout=  -interline=3 
+&gt;dbconvert:  -fig/stanford  -split=ig  -long  -C  -verbose
+
+   # Remember, every BIOSEQ entry must have at least one non-&gt; line.
+</PRE>
+then the command "<SAMP>fmtseq blast2 -mode=blast</SAMP>" would set
+all of the options listed on the information line for "blast". And
+"<SAMP>fmtseq fasta_out.30 -mode=fasta -idprefix=sp -otemp</SAMP>"
+would be equivalent to the command given in "<A
+HREF="bigaln_example.html">the big alignment</A>" example.
+
+
+<P>
+<H2><A NAME="input">Program Input and File Formats</A></H2>
+
+The input is specified either by giving files/databases on the command
+line, using the '-pipe' option on the command line to specify standard
+input, or by specifying an input file/database in interactive mode.
+Except for '-pipe', each input string is taken as either a file or a
+database search specification.  If the string refers to an existing
+file, that file is considered the input.  Otherwise, the string is
+considered a database search specification.  See file "<A
+HREF="seqio_user.html#access">user.doc</A>" for more details on
+specifying the files and databases.
+
+<P>
+The program can handle a number of different file formats, including
+the ones listed above in the program options plus special GCG-*
+formats for no loss conversions of GenBank, PIR, EMBL, Swiss-Prot,
+FASTA, NBRF and IG/Stanford entries to and from the GCG format.
+See below for details about this special set of formats.
+
+<P>
+All of the formats supported by the program are interconvertable, with
+the exceptions that the FASTA-output and BLAST-output are input-only
+formats and the Pretty format is an output-only format.  By default,
+the format of the input is automatically determined from the input
+text.  The format determination should work correctly for all of the
+supported formats except the Raw format, and the program uses the
+Plain format if no match is found to a support format.  The option
+`-informat' can be used to specify the input's format, if either the
+automatic determination fails (or you just want to make sure it's
+correct).
+
+<P>
+Most of the file formats are the common formats used to store
+biological sequences.  The more unusual formats are Raw, Plain,
+FASTA-old, FASTA-output, BLAST-output, NBRF-old, IG-old, GCG-* and
+Pretty.  The Raw and Plain formats both specify that the complete
+contents of the file contain a single sequence.  The only difference
+between the two is that the Plain format omits any whitespace and
+digits from the sequence, whereas the Raw format takes every character
+in the file as part of the sequence.
+
+<P>
+The FASTA-old, NBRF-old and IG-old formats are actually just
+variations of the FASTA, NBRF and IG/Stanford formats, where the form
+of the output in these variations differs slightly.  The basic formats
+all have a place where one or more comment lines can appear in the
+sequence entry.  The *-old formats all limit the entry output so that
+they contain a single line beginning the entry, a one-line sequence
+description (in NBRF-old and IG-old only), and then the sequence.  No
+other lines will appear in the entry.  These limited formats are
+included to produce output compatible with other commonly used
+programs.  The FASTA-old format output, for example, can be used as
+the input to the "pressdb" and "setdb" programs in the BLAST release.
+
+<P>
+The GCG-* formats are actually a set of format names (GCG-GenBank,
+GCG-PIR, GCG-EMBL, ...) used to distinguish the GCG forms of GenBank,
+PIR, EMBL, Swiss-Prot, FASTA, NBRF and IG/Stanford entries from the
+generic GCG format (which treats all of the header lines as
+unstructured comments).  Any of the alternate names for the formats
+can replace the `*', so gcg-gb, gcg-sprot and gcg-igold are all valid
+formats.  The program distinguishes these formats, because it is able
+to convert between the non-GCG and GCG forms of these formats without
+losing any of the header information (most of the program's
+conversions lose the references, features and other things in the
+header).<BR>
+<I>(Note:  When you are specifying a conversion, you can use just the
+simple "GCG" format name, and the program will automatically detect
+and convert to or from one of the GCG-* formats whenever it can.)</I>
+
+<P>
+The FASTA-output and BLAST-output formats are read-only formats which
+take as input the output from one of the FASTA programs (FASTA,
+TFASTA, SSEARCH, LFASTA, LALIGN or ALIGN) or BLAST programs (BLASTN,
+BLASTP or BLASTX).  The program should be able to read the output from
+any of the BLAST programs (and possibly even the TBLAST* programs, but
+that hasn't been tested yet).  It does, however, have some trouble
+automatically determining the BLAST-output format, since many e-mail
+servers include some descriptive text at the beginning of the output
+file and that confuses the determination program.
+
+<P>
+For the FASTA-output format, the program can handle alignment output
+produced with a MARKX value (or '-m' option value) of 0, 1, 2, 3 or
+10.  The automatic format determination also has some trouble with
+some of the variations of the FASTA output, so for best results, the
+FASTA program output should be created in "non-interactive" mode,
+where the program header like this one
+<PRE>
+ SSEARCH searches a sequence database
+ using the Smith-Waterman algorithm
+ version 2.0u4, Feb. 1996
+Please cite:
+ T. F. Smith and M. S. Waterman, (1981) J. Mol. Biol. 147:195-197; 
+ W.R. Pearson (1991) Genomics 11:635-650
+.
+.
+.
+</PRE>
+is included in the output file (along with all of the other
+information given before the alignment output).  If one of the FASTA
+programs is run in interactive mode and the initial header information
+is not included in the output file, then the fmtseq program will not
+be able to automatically determine the file format, retrieve all of
+the necessary sequence information, and will completely fail to read
+output from ALIGN.
+
+<P>
+The Pretty format is just the same as in the readseq program, except
+that I changed the look of the `-numtop' and `-numbottom' numbering a
+little bit, added the `-interleave' option to explicit specify the
+interleaved format and added the `-skipempty' option to shorten the
+output of alignments containing large gaps in a number of sequences
+(like a big alignment of the BLAST output).  As mentioned in the
+readseq documentation, the best way to figure out the pretty-print
+options is to try them out in various combinations and see which you
+like.  A favorite set of options of mine is "<SAMP>-nametop
+-nameleft=11 -width=60 -nocolspace -interline=3 -gapout= </SAMP>".
+
+<P>
+Finally, the main database identifier in every sequence's entry (if
+they exist) is given an "identifier prefix" specifying which database
+the identifier refers to, such as "gb" for GenBank or "sp" for
+Swiss-Prot.  The option `-idprefix' can be used to specify that
+identifier prefix, if the program is unable to correctly determine
+it. See file "<A HREF="seqio_user.html#idents">user.doc</A>" for more
+information about identifier prefixes.
+
+<P>
+<H2><A NAME="output">Program Output Variations</H2>
+
+The default output of the program consists of the input sequences
+converted into the specified output format and output either to
+standard output or to the specified output file.  The program attempts
+to retain as much associated information as it can (such as keywords,
+references and features), but in most cases the converted entries will
+only contain a limited amount of information about each sequence.  The
+exceptions to this are where no "transformation" is performed on the
+sequence (as described in the next section), and either the input
+entry's format matches the output format or where the conversion
+consists of transforming between the non-GCG and GCG forms of the
+GenBank, PIR, EMBL, Swiss-Prot, FASTA, NBRF or IG/Stanford formats.
+In the first case, the input entry is passed unchanged to the output,
+and in the second, a "no loss" transformation is made which retains
+all of the header lines for the input entry (although any notational
+characters in the sequence except gaps will be lost).
+
+<P>
+If the `-list' option is set, then the program will only output a list
+of the input sequences read.  The list will contain a one line
+description of each of the input sequences.  When this option is set,
+it overrides all other options involving the output (i.e., output
+format, pretty printing, and so on) except for where the output is
+sent.  Even in this mode, if the output file and/or the `-split'
+option are set, the listing will be output as governed by those
+options.
+
+<P>
+If the `-long' option is set, then the program will produce very
+similar output to the default, except that the entire input header for
+each input sequence will appear as a comment in the converted output
+entry (for those formats which have some place to put comments for
+each sequence).  This may be useful if you want to convert files or
+database from one format to another (in order to run a particular
+sequence analysis program), but you still want to retain the
+capability of accessing all of the information in the original
+entries.
+
+<P>
+If the `-split=ext' option is set, then the program will "split" its
+output into one or more output files, based on the input
+files/databases given it and whether the output format is a GCG format
+or not.  When the program is producing non-GCG output (i.e., so more
+than one entry can appear in a file), it will create "mirrors" of each
+of the input files, where each output file consists of the converted
+entries of the corresponding input file.  For example, running the
+command "<SAMP>fmtseq -split=fsa -ffasta pir</SAMP>" will create four
+files, "pir1.fsa", "pir2.fsa", "pir3.fsa" and "pir4.fsa" containing
+the converted entries of "pir1.dat", "pir2.dat", "pir3.dat" and
+"pir4.dat", respectively (assuming those are the PIR database files).
+
+<P>
+When the output format is a GCG format (which restricts files to
+contain a single entry), then the program will create a new file for
+each input entry and store each converted entry in its separate file.
+The name of the file will consist of the entry's main identifier's
+name followed by the extension given with the split option.  So, for
+example, the command "<SAMP>fmtseq -split=txt -fgcg
+sp:104k_thepa</SAMP>" will create a file "104K_THEPA.txt" containing
+the GCG format for that Swiss-Prot entry.
+
+<P>
+Whenever the `-split' option is set, the value of the `-output' option
+determines what directory the new files will be created in.  If the
+`-output' option is not set (i.e., set to "standard output"), then the
+program will create the files in the current directory.  If the
+`-output' option is set, then the program will create the files in the
+directory specified by that option.  When the `-split' option is used,
+an error is triggered if the `-output' option is not set to a
+directory.
+
+<P>
+<H2><A NAME="select">Sequence Selection and Transformation</A></H2>
+
+The sequences from the input that should be converted and produced as
+output can be selected in one of three ways.  By default or when the
+`-all' option is used, all of the input sequences are selected.  When
+the `-ask' option is used, then the program will ask about each
+sequence.  During this asking process, the sequences'
+entries can be displayed, so that you can based your selection on the
+contents of each sequence's entry.  The interface performing the
+asking should be very simple to use, and is easiest learned by trying
+it out. 
+
+<P>
+The final method for selecting sequences is by using the `-item'
+option to specify sequences by their position in the input.  The value
+to `-item' is a list of positions, and the sequences in those
+positions in the input are selected for conversion.  The positions in
+the list can be given in any order, however the input sequences will
+always be output in the order they appear in the input.  (There
+currently is no way to reorder the sequences using fmtseq, but this
+will be corrected in the next version.)
+
+<P>
+Once the input has been selected, one or more transformations may be
+applied to those sequences.  The simple transformations occur when the
+options `-caselower', `-CASEUPPER' or `-reverse' are set, or when the
+value of `-gapin' differs from `-gapout'.  The `-caselower' and
+`-CASEUPPER' options convert the sequence to all lowercase or all
+uppercase.  The `-reverse' option reverses the sequence and, if the
+sequence is DNA or RNA, complements the sequence characters.
+
+<P>
+The `-gapin' and `-gapout' options define what the gap symbol should
+be in the input and output.  If `-gapin' is set to a character, and
+either `-gapout' is not set or set to a different character, then all
+of the input gap symbols will be removed (if `-gapout' is not set) or
+changed to the `-gapout' character.  The `-gapchar' option simply sets
+`-gapin' and `-gapout' to the same value.
+
+<P>
+The complex tranformations involves the `-degap', `-raw' and
+`-bigalign' options and the format of the input and output.  The
+general rule for the three options is that `-degap' is used to remove
+gaps from the sequences, `-raw' is used to retain the gaps (or other
+notational symbols), and `-bigalign' is used only with the
+FASTA-output format.  However, the application of these three options
+changes depending on the input and output file formats.
+
+<P>
+If the input format is FASTA-output or BLAST-out, then the default
+action of the program (and remember that `-bigalign' is set by
+default) is to find the pairwise alignments specified by the input
+file and to construct a <A HREF="bigaln_example.html">big
+alignment</A>. where all of the pairwise alignments are combined using
+the query sequence as the reference point.  The output consists of the
+sequences in the big alignment.  By default, only the characters
+forming the actual alignment are used in the big alignment (the
+context strings output by the FASTA programs are ignored).  If the
+`-raw' option is specified, then the context strings around the
+pairwise alignments are added to the big alignment.  If the `-degap'
+option is specified, then after the big alignment is constructed, all
+gaps are removed (although why you would want to do this, I don't
+know).
+
+<P>
+Finally, the operations listed above only occur when `-bigalign' is
+set.  If `-bigalign' is not set, then the input is treated just as if
+it were a FASTA input file (see below), and all of the sequences
+listed in the FASTA program output will be used as the input
+sequences.  (NOTE: In this case, the input sequences will consist of
+many occurrences of the query sequence, one for each pairwise
+alignment.)
+
+<P>
+If the input format is not FASTA-output or BLAST-output, or `-bigalign'
+is not set, then the program tries to be intelligent about the default
+conversions between formats.  It divides all of the file formats into
+two types: 
+<P>
+<OL>
+<LI>
+Formats that typically only store database sequences, and do not
+typically store aligned sequences (i.e., sequences with gaps).  These
+formats are GenBank, PIR, EMBL, Swiss-Prot, their GCG-* formats, and ASN.1.
+<LI>
+Formats that can store aligned sequences.  These formats are Raw,
+Plain, FASTA, FASTA-old, NBRF, NBRF-old, IG/Stanford, IG-old, their
+GCG-* formats, PHYLIP, Clustalw, GCG and MSF.
+</OL>
+When either the input or the output (or possibly both) are one of the
+"database" formats, then the program will assume that only the actual
+sequence characters should be read in or output.  Specifically,
+<P>
+<UL>
+<LI>
+If the input is a "database" format, then by default, the program only
+reads the alphabetic characters from the sequence entries.  Any gap
+symbols or notational characters are ignored. If the `-raw' option is
+specified, then the gap symbols and notational characters will be
+included as part of the sequence (i.e., all characters except
+whitespace and digits).  If the '-degap' option is also specified,
+then gap symbols will be removed from the "raw" sequences (although
+this will leave any notational symbols).
+<P>
+<LI>
+If the output is a "database" format, then all non-alphabetic
+characters are removed from the sequence, unless the `-raw' option is
+set.  Also, if the `-degap' option is set (or `-gapout' is unset),
+then any gap symbols are removed from the sequence.
+</UL>
+If neither the input nor the output is a "database" format, then the
+program will only apply the simple transformations to each sequence.
+Also, note that regardless of the input and output formats, the simple
+transformations will always be applied when their options are set.
+
+<P>
+<HR>
+<ADDRESS> 
+<a href="http://wwwcsif.cs.ucdavis.edu/~knight">James R. Knight,</a>
+<a href="mailto:knight@cs.ucdavis.edu">knight@cs.ucdavis.edu</a><BR>
+June 27, 1996
+</ADDRESS>
+</BODY>

@@ -1,0 +1,244 @@
+SEQIO -- A Package for Sequence File I/O 
+
+
+idxseq - A Database Indexing Program
+************************************
+
+
+
+In order for the SEQIO package to randomly access the entries of a
+database, it must have an index which maps the database identifiers
+into the file location of the various entries. This program constructs
+such an index for any or all of the identifiers that identify particular
+database entries. So, you can create index files for the GenBank
+LOCUS names, accession numbers or the new NID and PID numbers,
+or you can create indexes for all three types of identifiers and access
+GenBank entries through any of them. 
+
+The program gets much of its information from the BIOSEQ file pointed
+to by the BIOSEQ environment variable. The discussion that follows
+assumes you know what a BIOSEQ file looks like and how to create one.
+The specific information used by the program are the "Index"
+information fields for each database's BIOSEQ entry. That information
+field gives the name of the file idxseq should use as the index file. Note
+that the filename given in the "Index" field can either be an absolute
+pathname, or can be a pathname relative to the root directory of the
+BIOSEQ entry. 
+
+In the basic "loading" and "merging" modes of the program (i.e.,
+creating a new index file or merging new information into an old index
+file), whenever an identifier is found in one of the database entries, the
+program will first lookup the identifier prefix to determine what
+database that prefix corresponds to. Then, it will search the BIOSEQ
+entries for that database to see if an "Index" information field specifies
+the location of the index file. Thus, you don't have to specify the index
+file name on the command line. It will be automatically extracted from
+the the BIOSEQ file. 
+
+If no "Index" information field is found, then the program assumes that
+no index file should be created for this identifier prefix. So, you can
+regulate which identifiers are indexed by the addition (or removal) of
+"Index" information fields from the BIOSEQ entries for the different
+databases. And, if you want to create a cross-database index (of
+accession numbers, or NID or PID numbers, say), just create a virtual
+BIOSEQ entry containing an "Index" information field. 
+
+Program Options
+===============
+
+The format of the command line is the following: 
+
+index [-l | -m | -r idlist | -d idlist | -f format | -i idprefix | -q] files...
+
+where the options and input are the following (described here
+assuming only one index file (and identifier type) is being created): 
+
+   -l 
+      The "load" mode. Create a new index file containing only
+      the identifiers in the input (i.e., load the identifiers into an
+      index). Remove the old index file, if it exists. 
+   -m 
+      The "merge" mode. Merge the indexes for the input
+      identifiers with the old index file (if it exists). This merging
+      is performed on a per file basis, and NOT on a per
+      identifier basis. 
+
+      So, all indexes in the old index file whose file location is
+      one of the input files are removed and replaced with the
+      new indexes for those files. This simplifies the case where
+      entries are removed from a database file and you want to
+      remove them from the index file. Simply rerunning idxseq
+      on that file will remove those entries' indexes. However,
+      duplicate identifiers for different entries (or, by some
+      mechanism, the same entry in different files) are permitted
+      in the index file and will not be removed. 
+   -r idlist 
+      This option restricts the load and merge modes to only
+      process the identifiers listed in the option. Normally, the
+      program checks every identifier given for an entry to see if
+      an index file exists for that identifier. This option can be
+      useful for a database like GenPept, where the accession
+      numbers in the entry are really the GenBank accession
+      numbers. The command "idxseq -r gp genpept" will
+      tell idxseq to add the GenPept identifiers to the GenPept
+      index file, but to not add the accession numbers to the
+      accession index file. 
+   -d idlist 
+      The "delete" mode. This option takes a list of identifier
+      prefixes, goes through the index files for each of them, and
+      deletes any indexes whose file location is one of the files
+      specified on the command line. So, for example, the
+      command "idxseq -d acc pir" deletes all PIR
+      accession numbers from the accession index file. 
+   -f format 
+      This option can be used to specify the format of the input
+      files, if the program has trouble automatically determining
+      it (and if the BIOSEQ entries for the databases don't list a
+      file format). 
+   -i idprefix 
+      This option can be used to specify the identifier prefix for
+      the main identifiers in each input entry (if the identifier
+      prefix is not listed in the BIOSEQ entry and cannot be
+      determined from the entry itself). 
+   -q 
+      This option tells the program to run quietly. Normally, the
+      program displays its progress in reading the input and
+      constructing the index files. 
+   files... 
+      These are the database files that the program should use
+      as input. These must be specified as database files, they
+      cannot be arbitrary pathnames (in order to make sure that
+      the database's index file only contains indexes for entries
+      in the database's files). So, for example, if you are adding
+      the GenBank non-cumulative file for June 28th to the
+      database, you should first install the file in the database
+      and then run "idxseq genbank:nc0628.flat" to add
+      those identifiers to the appropriate index files. 
+
+Program Operation
+=================
+
+In the load and merge modes, the program first reads each of the
+entries in the input. For each entry, it extracts all of the
+identifiers for that entry and checks each identifier prefix to see if
+an index file has been specified for the database corresponding to the
+identifier prefix. If the `-r' option is set, it also check to see if
+the identifier prefix is in that list of idprefixes. If there is an
+index file (and the idprefix is on the list), then the index for that
+entry is added to the internal lists of indexes being constructed for
+each such identifier prefix.
+
+When all of the input has been read, the program will go through the
+identifier prefixes it has seen in the input, and will perform either the
+load or the merge of the internal list of indexes with the old index file (if
+it exists). So, idxseq will only alter the contents of the existing index file
+after it has read all of the input. Interrupting the program anytime
+before then will not affect the contents of those existing index files. 
+
+In the delete mode, the program first constructs a list of the files
+specified in the input (i.e., by translating the database specifications
+into a list of files) and then goes through the list of identifier prefixes.
+For each identifier prefix, it looks for the index file of the corresponding
+database and then rewrites that index file, eliminating any index whose
+file location is one of ones in the list of files. The index file itself is
+deleted if all of the indexes are eliminated. 
+
+(Note: When running the delete mode (or the load or merge mode), you
+should remember that if the BIOSEQ entry for a database contains files
+using wildcard characters, such as "daily-nc/nc????.flat" for the
+GenBank non-cumulative files, only the currently existing files will be
+retrieved by the program. Thus, if you are installing a new version of the
+database (and hence removing, without replacing, files like the
+non-cumulative files), you should run idxseq in delete mode before
+removing those files. Otherwise, you'll have dangling references to the
+non-cumulative files in the index file, since the merge operation, which
+you'd have to use for cross-database identifiers, will not remove the
+non-cumulative filenames because they are not in the files found in the
+input.) 
+
+Index File Format
+=================
+
+The format of the idxseq index files is a very simple (yet compact)
+format that can be used not only by the SEQIO package, but by any
+program. The entire file is a printable file (i.e., you can `cat' or `more' it
+or edit it) that consists of a header followed by the indexes. The header
+has the following form: 
+
+138 4 # SEQIO Index File - Version 1.0
+/1/biology/database/pir/pir1.dat
+/1/biology/database/pir/pir2.dat
+/1/biology/database/pir/pir3.dat
+
+where the first two numbers of the first line give the number of bytes
+and number of lines of the header (including the first line and all of the
+newline characters). After those first two numbers, the string "# SEQIO
+Index File" appears on the first line, along with a version number.
+This string can be used to check that the file is in fact an index file.
+After the first line, the next "num_lines-1" lines list the files containing
+all of the entries indexed by the index file. 
+
+The rest of the file consists of indexes, also given one per line. The form
+of each index is the following: 
+
+A19940  1       RBaO
+A19942  1       a:Q`
+A1HU    0       eDGk
+A1HUBR  0       cn?3
+A20015  1       3jdkC
+A20146  1       3e5]T
+
+where each index begins with the identifier, and then gives the file
+number (i.e., the position of the file in the header list) and byte offset of
+that identifier's entry. The three values are separated by tab characters
+and the index always ends with a newline character. In order to save
+space, the file number and the byte offset are given in base 64 numbers
+(that's why the characters look so strange). The base 64 numbering
+scheme is very simple, it consists of the 64 ASCII characters beginning
+with the digit '0' (and running through the lower case 'o', I believe).
+Also, the file number 0 specifies the first file in the header list (so, don't
+count the "# SEQIO Index File" line when going from file number to
+filename). 
+
+So, if you want to write your own program to map an identifier to a
+file/byte-offset location, here are the step you should write: 
+
+ 1. Read the first line of the file, extract the number of bytes and
+   number of lines of the header, and check that "# SEQIO Index
+   File" appears on the line. 
+ 2. If reading the header by line (using Perl for example), then read
+   the next "num_lines-1" lines to get the list of files. If performing
+   a block read, then read the next "num_bytes - first_line_length"
+   bytes to get the list of files. 
+ 3. Perform a binary search on the file between byte offsets
+   "num_bytes" and the size of the file. The binary search should
+   find the beginning an end of the line in the middle of your search
+   range, and then do a string comparison between the beginning
+   of that line and the identifier you're looking up. And, of course,
+   then recurse in the appropriate manner. 
+ 4. For each index line matching the identifier (and, remember, there
+   could be more than one), extract the file number and byte offset
+   which are given after the first and second tab characters on the
+   line (or are the second and third words on the line, if you're
+   using Perl). Convert them from base 64 to base 10 using code
+   like the function below, and then get the filename by getting the
+   "filenum"'th file in the header list. 
+
+   int atoi64(char *s)
+   {
+     int num;
+   
+     while (*s && isspace(*s))
+       s++;
+   
+     for (num=0; *s >= '0' && *s < '0' + 64; s++) {
+       num *= 64;
+       num += *s - '0';
+     }
+   
+     return num;
+   }
+
+
+James R. Knight, knight@cs.ucdavis.edu
+June 28, 1996 
