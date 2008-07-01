@@ -1,5 +1,0 @@
-<area shape="rect" href="$d6/dd1/classbiolib_1_1trees_1_1binary__tree.html#b10d6cb32c0db141b937b8162235447e" title="Returns an iterator pointing to the root of the tree." alt="" coords="504,6,712,32">
-<area shape="rect" href="$d6/dd1/classbiolib_1_1trees_1_1binary__tree.html#be0e30a7ea9811e91406e7f14b80ba86" title="Returns an iterator to the right most vertex of the tree." alt="" coords="509,107,707,134">
-<area shape="rect" href="$d6/dd1/classbiolib_1_1trees_1_1binary__tree.html#c48cf86db0cd9d3c9017ab26a41125eb" title="Returnrs the number of vertices of the tree." alt="" coords="256,56,456,83">
-<area shape="rect" href="$d6/dd1/classbiolib_1_1trees_1_1binary__tree.html#cdb43534bf097635fe91505b4e542fbe" title="Returns true if the tree is empty." alt="" coords="776,56,987,83">
-<area shape="rect" href="$d1/d39/classbiolib_1_1trees_1_1binary__tree_1_1vertex.html#585e461529297eda3a0d2879482c18ba" title="Verified if the vertex is a leaf." alt="" coords="760,107,1003,134">
