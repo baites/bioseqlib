@@ -1,0 +1,4 @@
+<area shape="rect" href="$dc/d97/classbiolib_1_1global__alignment_1_1two__sequences__affine__gap__base.html" title="Abstract base class for affine gap aligment algorithms for two sequences." alt="" coords="576,31,949,57">
+<area shape="rect" href="$de/d03/classbiolib_1_1global__alignment_1_1base.html" title="Base class for all global aligment algorithms." alt="" coords="7,31,207,57">
+<area shape="rect" href="$d0/dfe/classbiolib_1_1global__alignment_1_1two__sequences__affine__gap.html" title="This class implements a affine gap aligment algorithm for two sequences in O(n^2)..." alt="" coords="1019,5,1355,32">
+<area shape="rect" href="$de/d81/classbiolib_1_1global__alignment_1_1two__sequences__affine__gap__linear.html" title="This class implements a affine gap aligment algorithm for two sequences in O(n)." alt="" coords="997,56,1376,83">
