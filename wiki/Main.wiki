@@ -42,4 +42,4 @@ bioseqlib> export BIOSEQLIBROOT=$PWD (for bash)
 
 The code documentation is done by doxygen. The code documenting the trunk code can be found at the following link.
 
-  * [http://flexlib.googlecode.com/svn/trunk/docs/biolib/html/index.html Doxygen document]
+  * [http://bioseqlib.googlecode.com/svn/trunk/docs/biolib/html/index.html Doxygen document]
