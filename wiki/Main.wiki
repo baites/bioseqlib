@@ -37,3 +37,7 @@ Example:
 ~> cd bioseqlib
 bioseqlib> export BIOSEQLIBROOT=$PWD (for bash)
 }}}
+
+=Code documentation=
+
+The code documentation is done by doxygen. The code documenting the trunk code can be found at
